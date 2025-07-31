@@ -1275,12 +1275,10 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db }) {
         <div className="bg-gray-900 text-white min-h-screen font-sans p-4 sm:p-6 lg:p-8">
             {modal && <Modal {...modal} />}
             <div className="max-w-full mx-auto">
-                <header className="mb-8 relative flex flex-col sm:flex-row sm:justify-center items-center">
-                    <div className="text-center">
-                        <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 tracking-wider"><TrophyIcon /> Akavin games</h1>
-                        <p className="text-gray-400 mt-2">AkaGamestudio © v0.1</p>
-                    </div>
-                    <div className="sm:absolute sm:top-0 sm:right-0 flex items-start gap-4 mt-4 sm:mt-0">
+                <header className="text-center mb-8">
+                    <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 tracking-wider"><TrophyIcon /> Akavin games</h1>
+                    <p className="text-gray-400 mt-2">AkaGamestudio © v0.1</p>
+                    <div className="flex items-center justify-center gap-4 mt-4">
                          {user && !user.isAnonymous && (
                              <button onClick={onSignOut} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-600 flex items-center">
                                 <LogoutIcon /> Sign Out
