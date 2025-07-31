@@ -1277,7 +1277,7 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db }) {
             <div className="max-w-full mx-auto">
                 <header className="text-center mb-8 relative">
                     <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 tracking-wider"><TrophyIcon /> Akavin games</h1>
-                    <p className="text-gray-400 mt-2">AkaGamestudio ©</p>
+                    <p className="text-gray-400 mt-2">AkaGamestudio © v0.1</p>
                     <div className="absolute top-0 right-0 flex items-start gap-4">
                          {user && !user.isAnonymous && (
                              <button onClick={onSignOut} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-600 flex items-center">
