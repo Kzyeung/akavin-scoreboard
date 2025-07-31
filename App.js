@@ -1,90 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, getDocs, getDoc, query, updateDoc, orderBy, setDoc, where } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, getDocs, getDoc, query, updateDoc, orderBy, setDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { firebaseConfig } from './firebaseConfig.js';
-
-// --- Authentication Component ---
-function Login({ onLogin, onGoogleLogin, onSignUp, error }) {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-
-    return (
-        <div className="max-w-sm mx-auto text-center animate-fade-in p-8 bg-gray-800 rounded-xl">
-            <h2 className="text-3xl font-bold text-blue-300 mb-4">Sign In or Sign Up</h2>
-            {error && <p className="text-red-400 mb-4">{error}</p>}
-            <div className="flex flex-col gap-3">
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email"
-                    className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button onClick={() => onLogin(email, password)} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700">
-                    Sign In
-                </button>
-                <button onClick={() => onSignUp(email, password)} className="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700">
-                    Sign Up
-                </button>
-                <p className="text-gray-500 my-2">or</p>
-                <button onClick={onGoogleLogin} className="w-full bg-red-600 text-white font-bold py-3 px-6 rounded-md hover:bg-red-700">
-                    Sign in with Google
-                </button>
-            </div>
-        </div>
-    );
-}
 
 // --- Helper Components & Icons ---
 
-function AvatarSelection({ onSelectAvatar }) {
-    const avatars = ['avatar1.svg', 'avatar2.svg', 'avatar3.svg'];
-    const [currentIndex, setCurrentIndex] = useState(0);
-
-    const handleNext = () => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % avatars.length);
-    };
-
-    const handlePrev = () => {
-        setCurrentIndex((prevIndex) => (prevIndex - 1 + avatars.length) % avatars.length);
-    };
-
-    return (
-        <div className="max-w-sm mx-auto text-center animate-fade-in p-8 bg-gray-800 rounded-xl">
-            <h2 className="text-3xl font-bold text-blue-300 mb-4">Choose Your Avatar</h2>
-            <div className="flex items-center justify-center gap-4">
-                <button onClick={handlePrev} className="text-white font-bold text-2xl p-2 rounded-full bg-gray-700 hover:bg-gray-600">
-                    &#8592;
-                </button>
-                <div className="w-48 h-48 bg-gray-700 rounded-lg p-4">
-                    <img src={`/avatars/${avatars[currentIndex]}`} alt="avatar" className="w-full h-full" />
-                </div>
-                <button onClick={handleNext} className="text-white font-bold text-2xl p-2 rounded-full bg-gray-700 hover:bg-gray-600">
-                    &#8594;
-                </button>
-            </div>
-            <button onClick={() => onSelectAvatar(avatars[currentIndex])} className="mt-8 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700">
-                Select
-            </button>
-        </div>
-    );
-}
-
 const TrophyIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-2 inline-block text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20l4-4m0 0l-4-4m4 4H3" /></svg>;
-const UserIcon = ({ avatar }) => {
-    if (avatar) {
-        return <img src={`/avatars/${avatar}`} alt="avatar" className="h-8 w-8 mr-2 inline-block rounded-full" />;
-    }
-    return <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>;
-}
+const UserIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>;
 const HistoryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z" clipRule="evenodd" /></svg>;
 const VsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21v-4a6 6 0 00-12 0v4" /></svg>;
 const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>;
@@ -210,29 +133,27 @@ function CreateRoom({ onCreateRoom, user }) {
     );
 }
 
-function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart, isAdmin }) {
+function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart }) {
     const sortedPlayers = [...players].sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
     return (
         <div className="animate-fade-in max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Manage Players</h2>
-            {isAdmin && (
-                <div className="flex flex-col sm:flex-row gap-2 mb-6">
-                    <button onClick={onAddPlayer} disabled={players.length >= 15} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">Add Player</button>
-                </div>
-            )}
+            <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Register Players</h2>
+            <div className="flex flex-col sm:flex-row gap-2 mb-6">
+                <button onClick={onAddPlayer} disabled={players.length >= 15} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">Add Player</button>
+            </div>
             <div className="space-y-3">
                 {sortedPlayers.map((p, i) => (
                     <div key={p.id} className="bg-gray-700 rounded-lg p-3 flex justify-between items-center shadow-md">
                         <span className="font-medium text-lg flex items-center">
                             <span className="text-gray-400 mr-3 w-6 text-right">{i + 1}.</span>
-                            <UserIcon avatar={p.avatar} />
+                            <img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full mr-2" />
                             {p.name}
                         </span>
-                        {isAdmin && <button onClick={() => onRemovePlayer(p.id)} className="text-red-400 hover:text-red-600 font-bold text-xl">&times;</button>}
+                        <button onClick={() => onRemovePlayer(p.id)} className="text-red-400 hover:text-red-600 font-bold text-xl">&times;</button>
                     </div>
                 ))}
             </div>
-            <div className="mt-8 text-center"><button onClick={onStart} className="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded-md hover:bg-green-700 transform hover:scale-105">Go to Scoreboard</button></div>
+            {players.length > 0 && <div className="mt-8 text-center"><button onClick={onStart} className="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded-md hover:bg-green-700 transform hover:scale-105">Go to Scoreboard</button></div>}
         </div>
     );
 }
@@ -345,7 +266,7 @@ function AddPoints({ players, onConfirm, onCancel, tournamentResults = null }) {
     );
 }
 
-function GameHistory({ history, onBack, onDeleteGame, onRenameGame, isAdmin }) {
+function GameHistory({ history, onBack, onDeleteGame, onRenameGame }) {
     const [editingGameId, setEditingGameId] = useState(null);
     const [newGameName, setNewGameName] = useState('');
 
@@ -371,12 +292,10 @@ function GameHistory({ history, onBack, onDeleteGame, onRenameGame, isAdmin }) {
             <div className="space-y-4">
                 {history.length > 0 ? history.map(game => (
                     <div key={game.id} className="bg-gray-700 rounded-lg shadow-lg p-4 relative">
-                        {isAdmin && (
-                            <div className="absolute top-2 right-2 flex gap-2">
-                                <button onClick={() => handleStartEditing(game)} className="text-gray-400 hover:text-yellow-400 transition-colors"><EditIcon /></button>
-                                <button onClick={() => onDeleteGame(game)} className="text-gray-400 hover:text-red-500 font-bold text-xl transition-colors">&times;</button>
-                            </div>
-                        )}
+                        <div className="absolute top-2 right-2 flex gap-2">
+                            <button onClick={() => handleStartEditing(game)} className="text-gray-400 hover:text-yellow-400 transition-colors"><EditIcon /></button>
+                            <button onClick={() => onDeleteGame(game)} className="text-gray-400 hover:text-red-500 font-bold text-xl transition-colors">&times;</button>
+                        </div>
                         {editingGameId === game.id ? (
                             <div className="flex items-center gap-2 pr-16">
                                 <input type="text" value={newGameName} onChange={(e) => setNewGameName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSave(game.id)} className="flex-grow bg-gray-900 text-white placeholder-gray-400 rounded-md px-3 py-2 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-purple-500" />
@@ -937,6 +856,37 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
     );
 }
 
+function AvatarSelection({ onAvatarSelect, onCancel }) {
+    const avatars = [
+        '/avatars/1.png', '/avatars/2.png', '/avatars/3.png', '/avatars/4.png',
+        '/avatars/5.png', '/avatars/6.png', '/avatars/7.png', '/avatars/8.png',
+        '/avatars/9.png', '/avatars/10.png', '/avatars/11.png', '/avatars/12.png',
+        '/avatars/13.png', '/avatars/14.png', '/avatars/15.png',
+    ];
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
+            <div className="bg-gray-900 text-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-auto border border-gray-700">
+                <h3 className="text-xl font-bold text-blue-300 mb-4">Select an Avatar</h3>
+                <div className="grid grid-cols-5 gap-4">
+                    {avatars.map(avatar => (
+                        <img
+                            key={avatar}
+                            src={avatar}
+                            alt="avatar"
+                            className="w-24 h-24 rounded-full cursor-pointer hover:ring-4 ring-blue-500"
+                            onClick={() => onAvatarSelect(avatar)}
+                        />
+                    ))}
+                </div>
+                <div className="flex justify-end mt-6">
+                    <button onClick={onCancel} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition">Cancel</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function JustFuTournament({ tournament, players, setTournament, onFinish, onCancel }) {
     const [finalResults, setFinalResults] = useState(null);
     const [scores, setScores] = useState(tournament.groupScores || {});
@@ -1095,25 +1045,14 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
     const [screen, setScreen] = useState('scoreboard');
     const [players, setPlayers] = useState([]);
     const [gameHistory, setGameHistory] = useState([]);
-    const [newPlayerName, setNewPlayerName] = useState('');
     const [tournament, setTournament] = useState(null);
     const [modal, setModal] = useState(null);
-    const [roomCreatorId, setRoomCreatorId] = useState(null);
-    const [needsAvatar, setNeedsAvatar] = useState(false);
     
     const hasPointsAwarded = players.some(p => p.points > 0);
 
     // --- Firebase & Data Init ---
     useEffect(() => {
         if (!db || !roomId) return;
-
-        const roomDocRef = doc(db, `artifacts/${appId}/public/data/rooms/${roomId}`);
-        getDoc(roomDocRef).then(docSnap => {
-            if (docSnap.exists()) {
-                setRoomCreatorId(docSnap.data().createdBy);
-            }
-        });
-
         console.log(`Setting up listeners for room: ${roomId}`);
         const playersPath = `artifacts/${appId}/public/data/rooms/${roomId}/players`;
         const historyPath = `artifacts/${appId}/public/data/rooms/${roomId}/games`;
@@ -1134,68 +1073,12 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
         };
     }, [db, roomId, appId]);
 
-    const handleAvatarSelection = async (avatar) => {
-        if (!db || !user) return;
-
-        const playersPath = `artifacts/${appId}/public/data/rooms/${roomId}/players`;
-        const q = query(collection(db, playersPath), where("userId", "==", user.uid));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            setModal({
-                title: 'Player Already Exists',
-                message: 'You can only have one player per room.',
-                onConfirm: () => setModal(null)
-            });
-            setNeedsAvatar(false);
-            return;
-        }
-
-        const userDocRef = doc(db, `users/${user.uid}`);
-        try {
-            await setDoc(userDocRef, { avatar }, { merge: true });
-            setNeedsAvatar(false);
-
-            const newPlayer = {
-                name: avatar.replace('.svg', ''),
-                points: 0,
-                createdAt: new Date(),
-                avatar: avatar,
-                userId: user.uid
-            };
-            await addDoc(collection(db, playersPath), newPlayer);
-
-        } catch (error) {
-            console.error("Error saving avatar:", error);
-            setModal({ title: 'Error', message: `Could not save your avatar. Error: ${error.message}`, onConfirm: () => setModal(null) });
-        }
-    };
-
     // --- Player Management ---
     const getPlayersPath = () => `artifacts/${appId}/public/data/rooms/${roomId}/players`;
-    const executeAddPlayer = async () => {
-        const nameToAdd = newPlayerName.trim();
-        if (nameToAdd === '') {
-            setModal({ title: 'Invalid Name', message: 'Player name cannot be empty.', onConfirm: () => setModal(null) });
-            return;
-        }
-        if (players.length >= 15) {
-            setModal({ title: 'Player Limit Reached', message: 'You can only register a maximum of 15 players.', onConfirm: () => setModal(null) });
-            return;
-        }
-        setNewPlayerName('');
-        const newPlayer = { name: nameToAdd, points: 0, createdAt: new Date() };
-        try {
-            await addDoc(collection(db, getPlayersPath()), newPlayer);
-        } catch (error) {
-            console.error("Error adding player: ", error);
-            setModal({ title: 'Error', message: `Could not save player. Firebase error: ${error.message}`, onConfirm: () => setModal(null) });
-            setNewPlayerName(nameToAdd);
-        }
-    };
     const handleAddPlayer = () => {
-        if (hasPointsAwarded) setModal({ title: 'Add New Player?', message: 'Adding a player after points are awarded is fine, but they will start with 0 points.\nContinue?', confirmText: 'Yes, Add', onConfirm: () => { setModal(null); executeAddPlayer(); }, cancelText: 'Cancel', onCancel: () => setModal(null) });
-        else executeAddPlayer();
+        setNeedsAvatar(true);
     };
+
     const executeRemovePlayer = async (playerId) => await deleteDoc(doc(db, getPlayersPath(), playerId));
     const handleRemovePlayer = (playerId) => {
         const p = players.find(p => p.id === playerId);
@@ -1389,22 +1272,18 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
     
     // --- Rendering ---
     const renderScreen = () => {
-        const isAdmin = user && user.uid === roomCreatorId;
-        if (needsAvatar) {
-            return <AvatarSelection onSelectAvatar={handleAvatarSelection} />;
-        }
         switch (screen) {
-            case 'register': return <PlayerRegistration {...{ players, onAddPlayer: () => setNeedsAvatar(true), onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isAdmin }} />;
+            case 'register': return <PlayerRegistration {...{ players, onAddPlayer: handleAddPlayer, onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard') }} />;
             case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history') }} />;
             case 'play_menu': return <PlayMenu {...{ tournament, players, onCreateTournament: createTournament, onResume: handleResume, onAddPoints: () => setScreen('add_points'), onBack: () => setScreen('scoreboard') }} />;
             case 'add_points': return <AddPoints {...{ players, onConfirm: handleAddPointsAndHistory, onCancel: () => setScreen('play_menu') }} />;
-            case 'history': return <GameHistory {...{ history: gameHistory, onBack: () => setScreen('scoreboard'), onDeleteGame: handleDeleteGame, onRenameGame: handleUpdateGameName, isAdmin }} />;
+            case 'history': return <GameHistory {...{ history: gameHistory, onBack: () => setScreen('scoreboard'), onDeleteGame: handleDeleteGame, onRenameGame: handleUpdateGameName }} />;
             case '1v1_tournament': return <SwissTournament {...{ tournament, setTournament, players, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'team_based_game': return <TeamBasedGame {...{ tournament, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'free_for_all_game': return <FreeForAllGame {...{ tournament, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'mario_kart_tournament': return <MarioKartTournament {...{ tournament, players, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'just_fu_tournament': return <JustFuTournament {...{ tournament, players, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
-            default: return <PlayerRegistration {...{ players, onAddPlayer: () => setNeedsAvatar(true), onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isAdmin }} />;
+            default: return <PlayerRegistration {...{ players, newPlayerName, setNewPlayerName, onAddPlayer: () => setNeedsAvatar(true), onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard') }} />;
         }
     };
     
@@ -1412,10 +1291,10 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
         <div className="bg-gray-900 text-white min-h-screen font-sans p-4 sm:p-6 lg:p-8">
             {modal && <Modal {...modal} />}
             <div className="max-w-full mx-auto">
-                <header className="text-center mb-8">
+                <header className="text-center mb-8 relative">
                     <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 tracking-wider"><TrophyIcon /> Akavin games</h1>
                     <p className="text-gray-400 mt-2">AkaGamestudio © v0.1</p>
-                    <div className="flex items-center justify-center gap-4 mt-4">
+                    <div className="absolute top-0 right-0 flex items-start gap-4">
                          {user && !user.isAnonymous && (
                              <button onClick={onSignOut} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-600 flex items-center">
                                 <LogoutIcon /> Sign Out
@@ -1497,16 +1376,13 @@ export default function App() {
     }, []);
 
     // --- Room Logic ---
-    const [authError, setAuthError] = useState(null);
-
-    const handleGoogleLogin = async (isCreating = false) => {
+    const handleLogin = async (isCreating = false) => {
         if (!firebaseServices) return;
         if (isCreating) {
             setLoginIntent('create');
         }
         const provider = new GoogleAuthProvider();
         try {
-            setAuthError(null);
             if (firebaseServices.auth.currentUser && firebaseServices.auth.currentUser.isAnonymous) {
                 await signOut(firebaseServices.auth);
             }
@@ -1514,29 +1390,11 @@ export default function App() {
         } catch (error) {
             setLoginIntent(null); // Reset intent on error
             console.error("Google sign-in error:", error);
-            setAuthError(error.message);
-        }
-    };
-
-    const handleSignUp = async (email, password) => {
-        if (!firebaseServices) return;
-        try {
-            setAuthError(null);
-            await createUserWithEmailAndPassword(firebaseServices.auth, email, password);
-        } catch (error) {
-            console.error("Sign-up error:", error);
-            setAuthError(error.message);
-        }
-    };
-
-    const handleSignIn = async (email, password) => {
-        if (!firebaseServices) return;
-        try {
-            setAuthError(null);
-            await signInWithEmailAndPassword(firebaseServices.auth, email, password);
-        } catch (error) {
-            console.error("Sign-in error:", error);
-            setAuthError(error.message);
+             setModal({
+                title: 'Sign-In Error',
+                message: `An error occurred: ${error.code}`,
+                onConfirm: () => setModal(null)
+            });
         }
     };
     
@@ -1548,13 +1406,6 @@ export default function App() {
 
     const handleJoinRoom = async (code) => {
         if (!firebaseServices) return false;
-        const userDocRef = doc(firebaseServices.db, `users/${user.uid}`);
-        const userDoc = await getDoc(userDocRef);
-        if (!userDoc.exists() || !userDoc.data().avatar) {
-            setNeedsAvatar(true);
-            return;
-        }
-
         const roomDocRef = doc(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${code}`);
         try {
             const docSnap = await getDoc(roomDocRef);
@@ -1577,7 +1428,6 @@ export default function App() {
             setModal({ title: 'Creation Failed', message, onConfirm: () => setModal(null) });
             return false;
         }
-
         console.log(`Attempting to create room '${code}' for user ${user.uid}`);
         const roomDocRef = doc(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${code}`);
         try {
@@ -1594,7 +1444,6 @@ export default function App() {
             console.log(`Room '${code}' created successfully.`);
             localStorage.setItem('akavin-room-id', code);
             setRoomId(code);
-            setNeedsAvatar(true);
             return true;
         } catch (error) {
             console.error("FATAL: Error creating room:", error);
@@ -1613,63 +1462,35 @@ export default function App() {
         setShowCreateForm(false);
     };
 
+    const executeAddPlayer = async (avatar, roomId) => {
+        if (!firebaseServices) return;
+        const nameToAdd = avatar.split('/').pop().split('.')[0];
+        const playersCollectionRef = collection(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${roomId}/players`);
+        const playersSnapshot = await getDocs(playersCollectionRef);
+        if (playersSnapshot.size >= 15) {
+            setModal({ title: 'Player Limit Reached', message: 'You can only register a maximum of 15 players.', onConfirm: () => setModal(null) });
+            return;
+        }
+        const newPlayer = { name: nameToAdd, points: 0, createdAt: new Date(), avatar };
+        try {
+            await addDoc(playersCollectionRef, newPlayer);
+        } catch (error) {
+            console.error("Error adding player: ", error);
+            setModal({ title: 'Error', message: `Could not save player. Firebase error: ${error.message}`, onConfirm: () => setModal(null) });
+        }
+        setNeedsAvatar(false);
+    };
+
     if (!isAuthReady || isLoadingRoom || !firebaseServices) {
         return <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center"><p className="text-xl">Loading Services...</p></div>;
     }
 
-    if (!user) {
-        return (
-            <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
-                {modal && <Modal {...modal} />}
-                <Login
-                    onLogin={handleSignIn}
-                    onGoogleLogin={handleGoogleLogin}
-                    onSignUp={handleSignUp}
-                    error={authError}
-                />
-            </div>
-        );
+    if (needsAvatar) {
+        return <AvatarSelection onAvatarSelect={(avatar) => executeAddPlayer(avatar, roomId)} onCancel={() => setNeedsAvatar(false)} />;
     }
 
-    if (needsAvatar) {
-        return (
-            <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
-                {modal && <Modal {...modal} />}
-                <AvatarSelection onSelectAvatar={(avatar) => {
-                    if (!firebaseServices || !user) return;
-                    const userDocRef = doc(firebaseServices.db, `users/${user.uid}`);
-                    setDoc(userDocRef, { avatar }, { merge: true })
-                        .then(() => {
-                            setNeedsAvatar(false);
-                            if (roomId) {
-                                const newPlayer = {
-                                    name: avatar.replace('.svg', ''),
-                                    points: 0,
-                                    createdAt: new Date(),
-                                    avatar: avatar,
-                                    userId: user.uid
-                                };
-                                const playersPath = `artifacts/${appId}/public/data/rooms/${roomId}/players`;
-                                addDoc(collection(firebaseServices.db, playersPath), newPlayer);
-                            } else {
-                                setModal({
-                                    title: 'Avatar Selected!',
-                                    message: 'Your avatar has been saved. Please try to join or create a room again.',
-                                    onConfirm: () => setModal(null)
-                                });
-                            }
-                        })
-                        .catch((error) => {
-                            console.error("Error saving avatar:", error);
-                            setModal({ title: 'Error', message: `Could not save your avatar. Error: ${error.message}`, onConfirm: () => setModal(null) });
-                        });
-                }} roomId={roomId} />
-            </div>
-        );
-    }
-    
     if (roomId) {
-        return <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} />;
+        return <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} executeAddPlayer={executeAddPlayer} />;
     }
 
     return (
@@ -1678,7 +1499,7 @@ export default function App() {
             <RoomGate 
                 onJoinRoom={handleJoinRoom} 
                 onCreateRoom={handleCreateRoom}
-                onLogin={handleGoogleLogin}
+                onLogin={handleLogin}
                 user={user}
                 showCreateForm={showCreateForm}
                 onSetShowCreateForm={setShowCreateForm}
