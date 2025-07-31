@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, getDocs, getDoc, query, updateDoc, orderBy, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, getDocs, getDoc, query, updateDoc, orderBy, setDoc, where } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from './firebaseConfig.js';
 
@@ -47,17 +47,33 @@ function Login({ onLogin, onGoogleLogin, onSignUp, error }) {
 
 function AvatarSelection({ onSelectAvatar }) {
     const avatars = ['avatar1.svg', 'avatar2.svg', 'avatar3.svg'];
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    const handleNext = () => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % avatars.length);
+    };
+
+    const handlePrev = () => {
+        setCurrentIndex((prevIndex) => (prevIndex - 1 + avatars.length) % avatars.length);
+    };
 
     return (
-        <div className="max-w-md mx-auto text-center animate-fade-in p-8 bg-gray-800 rounded-xl">
+        <div className="max-w-sm mx-auto text-center animate-fade-in p-8 bg-gray-800 rounded-xl">
             <h2 className="text-3xl font-bold text-blue-300 mb-4">Choose Your Avatar</h2>
-            <div className="grid grid-cols-3 gap-4">
-                {avatars.map(avatar => (
-                    <div key={avatar} onClick={() => onSelectAvatar(avatar)} className="cursor-pointer p-4 bg-gray-700 rounded-lg hover:bg-blue-600">
-                        <img src={`/avatars/${avatar}`} alt={avatar} className="w-full h-full" />
-                    </div>
-                ))}
+            <div className="flex items-center justify-center gap-4">
+                <button onClick={handlePrev} className="text-white font-bold text-2xl p-2 rounded-full bg-gray-700 hover:bg-gray-600">
+                    &#8592;
+                </button>
+                <div className="w-48 h-48 bg-gray-700 rounded-lg p-4">
+                    <img src={`/avatars/${avatars[currentIndex]}`} alt="avatar" className="w-full h-full" />
+                </div>
+                <button onClick={handleNext} className="text-white font-bold text-2xl p-2 rounded-full bg-gray-700 hover:bg-gray-600">
+                    &#8594;
+                </button>
             </div>
+            <button onClick={() => onSelectAvatar(avatars[currentIndex])} className="mt-8 w-full bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700">
+                Select
+            </button>
         </div>
     );
 }
@@ -1073,7 +1089,7 @@ function JustFuTournament({ tournament, players, setTournament, onFinish, onCanc
 }
 
 // --- Main App Component ---
-function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db }) {
+function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvatar }) {
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     const [screen, setScreen] = useState('scoreboard');
@@ -1083,6 +1099,7 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db }) {
     const [tournament, setTournament] = useState(null);
     const [modal, setModal] = useState(null);
     const [roomCreatorId, setRoomCreatorId] = useState(null);
+    const [needsAvatar, setNeedsAvatar] = useState(false);
     
     const hasPointsAwarded = players.some(p => p.points > 0);
 
@@ -1116,6 +1133,42 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db }) {
             unsubHistory(); 
         };
     }, [db, roomId, appId]);
+
+    const handleAvatarSelection = async (avatar) => {
+        if (!db || !user) return;
+
+        const playersPath = `artifacts/${appId}/public/data/rooms/${roomId}/players`;
+        const q = query(collection(db, playersPath), where("userId", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            setModal({
+                title: 'Player Already Exists',
+                message: 'You can only have one player per room.',
+                onConfirm: () => setModal(null)
+            });
+            setNeedsAvatar(false);
+            return;
+        }
+
+        const userDocRef = doc(db, `users/${user.uid}`);
+        try {
+            await setDoc(userDocRef, { avatar }, { merge: true });
+            setNeedsAvatar(false);
+
+            const newPlayer = {
+                name: avatar.replace('.svg', ''),
+                points: 0,
+                createdAt: new Date(),
+                avatar: avatar,
+                userId: user.uid
+            };
+            await addDoc(collection(db, playersPath), newPlayer);
+
+        } catch (error) {
+            console.error("Error saving avatar:", error);
+            setModal({ title: 'Error', message: `Could not save your avatar. Error: ${error.message}`, onConfirm: () => setModal(null) });
+        }
+    };
 
     // --- Player Management ---
     const getPlayersPath = () => `artifacts/${appId}/public/data/rooms/${roomId}/players`;
@@ -1337,6 +1390,9 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db }) {
     // --- Rendering ---
     const renderScreen = () => {
         const isAdmin = user && user.uid === roomCreatorId;
+        if (needsAvatar) {
+            return <AvatarSelection onSelectAvatar={handleAvatarSelection} />;
+        }
         switch (screen) {
             case 'register': return <PlayerRegistration {...{ players, onAddPlayer: () => setNeedsAvatar(true), onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isAdmin }} />;
             case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history') }} />;
@@ -1490,39 +1546,6 @@ export default function App() {
         handleLeaveRoom();
     };
 
-    const handleAvatarSelection = async (avatar) => {
-        if (!firebaseServices || !user) return;
-        const userDocRef = doc(firebaseServices.db, `users/${user.uid}`);
-        try {
-            await setDoc(userDocRef, { avatar }, { merge: true });
-            setNeedsAvatar(false);
-
-            if (roomId) {
-                const newPlayer = {
-                    name: avatar.replace('.svg', ''),
-                    points: 0,
-                    createdAt: new Date(),
-                    avatar: avatar,
-                    userId: user.uid
-                };
-                const playersPath = `artifacts/${appId}/public/data/rooms/${roomId}/players`;
-                await addDoc(collection(firebaseServices.db, playersPath), newPlayer);
-            } else {
-                // If there's no roomId, it means the user was prompted for an avatar before joining/creating a room.
-                // Now that they have an avatar, they can proceed.
-                setModal({
-                    title: 'Avatar Selected!',
-                    message: 'Your avatar has been saved. Please try to join or create a room again.',
-                    onConfirm: () => setModal(null)
-                });
-            }
-
-        } catch (error) {
-            console.error("Error saving avatar:", error);
-            setModal({ title: 'Error', message: `Could not save your avatar. Error: ${error.message}`, onConfirm: () => setModal(null) });
-        }
-    };
-
     const handleJoinRoom = async (code) => {
         if (!firebaseServices) return false;
         const userDocRef = doc(firebaseServices.db, `users/${user.uid}`);
@@ -1555,13 +1578,6 @@ export default function App() {
             return false;
         }
 
-        const userDocRef = doc(firebaseServices.db, `users/${user.uid}`);
-        const userDoc = await getDoc(userDocRef);
-        if (!userDoc.exists() || !userDoc.data().avatar) {
-            setNeedsAvatar(true);
-            return;
-        }
-
         console.log(`Attempting to create room '${code}' for user ${user.uid}`);
         const roomDocRef = doc(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${code}`);
         try {
@@ -1578,6 +1594,7 @@ export default function App() {
             console.log(`Room '${code}' created successfully.`);
             localStorage.setItem('akavin-room-id', code);
             setRoomId(code);
+            setNeedsAvatar(true);
             return true;
         } catch (error) {
             console.error("FATAL: Error creating room:", error);
@@ -1624,7 +1641,7 @@ export default function App() {
     }
     
     if (roomId) {
-        return <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} />;
+        return <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} />;
     }
 
     return (
