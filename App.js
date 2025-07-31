@@ -1635,7 +1635,35 @@ export default function App() {
         return (
             <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
                 {modal && <Modal {...modal} />}
-                <AvatarSelection onSelectAvatar={handleAvatarSelection} roomId={roomId} />
+                <AvatarSelection onSelectAvatar={(avatar) => {
+                    if (!firebaseServices || !user) return;
+                    const userDocRef = doc(firebaseServices.db, `users/${user.uid}`);
+                    setDoc(userDocRef, { avatar }, { merge: true })
+                        .then(() => {
+                            setNeedsAvatar(false);
+                            if (roomId) {
+                                const newPlayer = {
+                                    name: avatar.replace('.svg', ''),
+                                    points: 0,
+                                    createdAt: new Date(),
+                                    avatar: avatar,
+                                    userId: user.uid
+                                };
+                                const playersPath = `artifacts/${appId}/public/data/rooms/${roomId}/players`;
+                                addDoc(collection(firebaseServices.db, playersPath), newPlayer);
+                            } else {
+                                setModal({
+                                    title: 'Avatar Selected!',
+                                    message: 'Your avatar has been saved. Please try to join or create a room again.',
+                                    onConfirm: () => setModal(null)
+                                });
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Error saving avatar:", error);
+                            setModal({ title: 'Error', message: `Could not save your avatar. Error: ${error.message}`, onConfirm: () => setModal(null) });
+                        });
+                }} roomId={roomId} />
             </div>
         );
     }
