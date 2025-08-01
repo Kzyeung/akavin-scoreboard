@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, getDocs, getDoc, query, updateDoc, orderBy, setDoc } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from './firebaseConfig.js';
 
 // --- Helper Components & Icons ---
@@ -29,12 +29,20 @@ const Modal = ({ title, message, onConfirm, onCancel, confirmText, cancelText })
 );
 
 // --- New Room System Components ---
-function RoomGate({ onJoinRoom, onLogin, user, showCreateForm, onSetShowCreateForm, onCreateRoom }) {
+function RoomGate({ onJoinRoom, onLogin, onEmailLogin, user, showCreateForm, onSetShowCreateForm, onCreateRoom }) {
     const [roomCode, setRoomCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isCreatingAccount, setIsCreatingAccount] = useState(false);
 
     const handleJoin = async () => {
+        if (!user) {
+            setError('You must be logged in to join a room.');
+            return;
+        }
         if (!roomCode.trim()) {
             setError('Please enter a room code.');
             return;
@@ -55,6 +63,18 @@ function RoomGate({ onJoinRoom, onLogin, user, showCreateForm, onSetShowCreateFo
             onLogin(true); 
         }
     };
+
+    const handleEmailAuth = () => {
+        if (isCreatingAccount) {
+            if (password !== confirmPassword) {
+                setError('Passwords do not match.');
+                return;
+            }
+            onEmailLogin(email, password, true);
+        } else {
+            onEmailLogin(email, password, false);
+        }
+    };
     
     return (
         <div className="max-w-md mx-auto text-center animate-fade-in p-8 bg-gray-800 rounded-xl">
@@ -72,22 +92,64 @@ function RoomGate({ onJoinRoom, onLogin, user, showCreateForm, onSetShowCreateFo
                         placeholder="Enter Room Code"
                         className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <button onClick={handleJoin} disabled={isLoading} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">
+                    <button onClick={handleJoin} disabled={isLoading || !user} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">
                         {isLoading ? 'Joining...' : 'Join Room'}
                     </button>
                     {error && <p className="text-red-400 mt-2">{error}</p>}
+                    {!user && <p className="text-yellow-400 mt-2">You must be logged in to join a room.</p>}
                 </div>
             </div>
 
             <div className="mt-8">
                 <p className="text-gray-500 mb-3">or</p>
-                {user && !user.isAnonymous && showCreateForm ? (
-                    <CreateRoom onCreateRoom={onCreateRoom} user={user} />
-                ) : (
-                    <button onClick={handleCreateClick} className="bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700">
-                        Create a Room
-                    </button>
-                )}
+                <div className="bg-gray-700 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold mb-3">{isCreatingAccount ? 'Create an Account' : 'Sign In'}</h3>
+                    <div className="flex flex-col gap-3">
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Email"
+                            className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Password"
+                            className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {isCreatingAccount && (
+                            <input
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Confirm Password"
+                                className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        )}
+                        <button onClick={handleEmailAuth} disabled={isLoading} className="w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-md hover:bg-purple-700 disabled:bg-gray-500">
+                            {isLoading ? '...' : (isCreatingAccount ? 'Create Account' : 'Sign In')}
+                        </button>
+                        <button onClick={() => setIsCreatingAccount(!isCreatingAccount)} className="text-sm text-gray-400 hover:text-white">
+                            {isCreatingAccount ? 'Already have an account? Sign In' : 'Need an account? Create one'}
+                        </button>
+                    </div>
+                </div>
+                <p className="text-gray-500 my-3">or</p>
+                <button onClick={() => onLogin(false)} className="bg-red-600 text-white font-bold py-3 px-6 rounded-md hover:bg-red-700">
+                    Sign in with Google
+                </button>
+                <div className="mt-8">
+                    {user && !user.isAnonymous && showCreateForm ? (
+                        <CreateRoom onCreateRoom={onCreateRoom} user={user} />
+                    ) : (
+                        <button onClick={handleCreateClick} disabled={!user} className="bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700 disabled:bg-gray-500">
+                            Create a Room
+                        </button>
+                    )}
+                    {!user && <p className="text-yellow-400 mt-2">You must be logged in to create a room.</p>}
+                </div>
             </div>
         </div>
     );
@@ -133,14 +195,16 @@ function CreateRoom({ onCreateRoom, user }) {
     );
 }
 
-function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart }) {
+function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart, isRoomCreator }) {
     const sortedPlayers = [...players].sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
     return (
         <div className="animate-fade-in max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Register Players</h2>
-            <div className="flex flex-col sm:flex-row gap-2 mb-6">
-                <button onClick={onAddPlayer} disabled={players.length >= 15} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">Add Player</button>
-            </div>
+            {isRoomCreator && (
+                <div className="flex flex-col sm:flex-row gap-2 mb-6">
+                    <button onClick={onAddPlayer} disabled={players.length >= 15} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">Add Player</button>
+                </div>
+            )}
             <div className="space-y-3">
                 {sortedPlayers.map((p, i) => (
                     <div key={p.id} className="bg-gray-700 rounded-lg p-3 flex justify-between items-center shadow-md">
@@ -149,7 +213,7 @@ function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart }) {
                             <img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full mr-2" />
                             {p.name}
                         </span>
-                        <button onClick={() => onRemovePlayer(p.id)} className="text-red-400 hover:text-red-600 font-bold text-xl">&times;</button>
+                        {isRoomCreator && <button onClick={() => onRemovePlayer(p.id)} className="text-red-400 hover:text-red-600 font-bold text-xl">&times;</button>}
                     </div>
                 ))}
             </div>
@@ -158,7 +222,7 @@ function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart }) {
     );
 }
 
-function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistory }) {
+function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistory, isRoomCreator }) {
     return (
         <div className="animate-fade-in max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Scoreboard</h2>
@@ -171,8 +235,8 @@ function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistor
             <div className="mt-8 flex flex-col sm:flex-row justify-center items-center flex-wrap gap-4">
                 <button onClick={onPlay} className="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700">Play</button>
                 <button onClick={onShowHistory} className="w-full sm:w-auto bg-teal-600 text-white font-bold py-3 px-6 rounded-md hover:bg-teal-700">History</button>
-                <button onClick={onGoToRegister} className="w-full sm:w-auto bg-gray-600 text-white font-bold py-3 px-6 rounded-md hover:bg-gray-500">Manage Players</button>
-                <button onClick={onResetGame} className="w-full sm:w-auto bg-red-700 text-white font-bold py-3 px-6 rounded-md hover:bg-red-800">Reset Game</button>
+                {isRoomCreator && <button onClick={onGoToRegister} className="w-full sm:w-auto bg-gray-600 text-white font-bold py-3 px-6 rounded-md hover:bg-gray-500">Manage Players</button>}
+                {isRoomCreator && <button onClick={onResetGame} className="w-full sm:w-auto bg-red-700 text-white font-bold py-3 px-6 rounded-md hover:bg-red-800">Reset Game</button>}
             </div>
         </div>
     );
@@ -266,7 +330,7 @@ function AddPoints({ players, onConfirm, onCancel, tournamentResults = null }) {
     );
 }
 
-function GameHistory({ history, onBack, onDeleteGame, onRenameGame }) {
+function GameHistory({ history, onBack, onDeleteGame, onRenameGame, isRoomCreator }) {
     const [editingGameId, setEditingGameId] = useState(null);
     const [newGameName, setNewGameName] = useState('');
 
@@ -292,10 +356,12 @@ function GameHistory({ history, onBack, onDeleteGame, onRenameGame }) {
             <div className="space-y-4">
                 {history.length > 0 ? history.map(game => (
                     <div key={game.id} className="bg-gray-700 rounded-lg shadow-lg p-4 relative">
-                        <div className="absolute top-2 right-2 flex gap-2">
-                            <button onClick={() => handleStartEditing(game)} className="text-gray-400 hover:text-yellow-400 transition-colors"><EditIcon /></button>
-                            <button onClick={() => onDeleteGame(game)} className="text-gray-400 hover:text-red-500 font-bold text-xl transition-colors">&times;</button>
-                        </div>
+                        {isRoomCreator && (
+                            <div className="absolute top-2 right-2 flex gap-2">
+                                <button onClick={() => handleStartEditing(game)} className="text-gray-400 hover:text-yellow-400 transition-colors"><EditIcon /></button>
+                                <button onClick={() => onDeleteGame(game)} className="text-gray-400 hover:text-red-500 font-bold text-xl transition-colors">&times;</button>
+                            </div>
+                        )}
                         {editingGameId === game.id ? (
                             <div className="flex items-center gap-2 pr-16">
                                 <input type="text" value={newGameName} onChange={(e) => setNewGameName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSave(game.id)} className="flex-grow bg-gray-900 text-white placeholder-gray-400 rounded-md px-3 py-2 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-purple-500" />
@@ -1047,8 +1113,21 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
     const [gameHistory, setGameHistory] = useState([]);
     const [tournament, setTournament] = useState(null);
     const [modal, setModal] = useState(null);
+    const [isRoomCreator, setIsRoomCreator] = useState(false);
     
     const hasPointsAwarded = players.some(p => p.points > 0);
+
+    useEffect(() => {
+        const checkRoomCreator = async () => {
+            if (!user) return;
+            const roomDocRef = doc(db, `artifacts/${appId}/public/data/rooms/${roomId}`);
+            const roomDoc = await getDoc(roomDocRef);
+            if (roomDoc.exists() && roomDoc.data().createdBy === user.uid) {
+                setIsRoomCreator(true);
+            }
+        };
+        checkRoomCreator();
+    }, [user, db, roomId, appId]);
 
     // --- Firebase & Data Init ---
     useEffect(() => {
@@ -1273,17 +1352,17 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
     // --- Rendering ---
     const renderScreen = () => {
         switch (screen) {
-            case 'register': return <PlayerRegistration {...{ players, onAddPlayer: handleAddPlayer, onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard') }} />;
-            case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history') }} />;
+            case 'register': return <PlayerRegistration {...{ players, onAddPlayer: handleAddPlayer, onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isRoomCreator }} />;
+            case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history'), isRoomCreator }} />;
             case 'play_menu': return <PlayMenu {...{ tournament, players, onCreateTournament: createTournament, onResume: handleResume, onAddPoints: () => setScreen('add_points'), onBack: () => setScreen('scoreboard') }} />;
             case 'add_points': return <AddPoints {...{ players, onConfirm: handleAddPointsAndHistory, onCancel: () => setScreen('play_menu') }} />;
-            case 'history': return <GameHistory {...{ history: gameHistory, onBack: () => setScreen('scoreboard'), onDeleteGame: handleDeleteGame, onRenameGame: handleUpdateGameName }} />;
+            case 'history': return <GameHistory {...{ history: gameHistory, onBack: () => setScreen('scoreboard'), onDeleteGame: handleDeleteGame, onRenameGame: handleUpdateGameName, isRoomCreator }} />;
             case '1v1_tournament': return <SwissTournament {...{ tournament, setTournament, players, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'team_based_game': return <TeamBasedGame {...{ tournament, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'free_for_all_game': return <FreeForAllGame {...{ tournament, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'mario_kart_tournament': return <MarioKartTournament {...{ tournament, players, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'just_fu_tournament': return <JustFuTournament {...{ tournament, players, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
-            default: return <PlayerRegistration {...{ players, newPlayerName, setNewPlayerName, onAddPlayer: () => setNeedsAvatar(true), onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard') }} />;
+            default: return <PlayerRegistration {...{ players, newPlayerName, setNewPlayerName, onAddPlayer: () => setNeedsAvatar(true), onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isRoomCreator }} />;
         }
     };
     
@@ -1404,6 +1483,24 @@ export default function App() {
         handleLeaveRoom();
     };
 
+    const handleEmailLogin = async (email, password, isCreating) => {
+        if (!firebaseServices) return;
+        try {
+            if (isCreating) {
+                await createUserWithEmailAndPassword(firebaseServices.auth, email, password);
+            } else {
+                await signInWithEmailAndPassword(firebaseServices.auth, email, password);
+            }
+        } catch (error) {
+            console.error("Email auth error:", error);
+            setModal({
+                title: 'Authentication Error',
+                message: `An error occurred: ${error.code}`,
+                onConfirm: () => setModal(null)
+            });
+        }
+    };
+
     const handleJoinRoom = async (code) => {
         if (!firebaseServices) return false;
         const roomDocRef = doc(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${code}`);
@@ -1500,6 +1597,7 @@ export default function App() {
                 onJoinRoom={handleJoinRoom} 
                 onCreateRoom={handleCreateRoom}
                 onLogin={handleLogin}
+                onEmailLogin={handleEmailLogin}
                 user={user}
                 showCreateForm={showCreateForm}
                 onSetShowCreateForm={setShowCreateForm}
