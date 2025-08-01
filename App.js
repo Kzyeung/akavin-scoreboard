@@ -1430,6 +1430,9 @@ export default function App() {
     const [loginIntent, setLoginIntent] = useState(null); // 'create' or null
     const [needsAvatar, setNeedsAvatar] = useState(false);
     const [showSignUp, setShowSignUp] = useState(false);
+    const [roomCode, setRoomCode] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
@@ -1632,10 +1635,6 @@ export default function App() {
             </div>
         );
     }
-
-    const [roomCode, setRoomCode] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
 
     const handleJoin = async () => {
         if (!roomCode.trim()) {
