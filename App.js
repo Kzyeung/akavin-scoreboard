@@ -1611,7 +1611,7 @@ export default function App() {
             setModal({ title: 'Player Limit Reached', message: 'You can only register a maximum of 15 players.', onConfirm: () => setModal(null) });
             return;
         }
-        const newPlayer = { name: nameToAdd, points: 0, createdAt: new Date(), avatar: `/${avatar}` };
+        const newPlayer = { name: nameToAdd, points: 0, createdAt: new Date(), avatar };
         try {
             await addDoc(playersCollectionRef, newPlayer);
         } catch (error) {
