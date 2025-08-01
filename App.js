@@ -29,127 +29,115 @@ const Modal = ({ title, message, onConfirm, onCancel, confirmText, cancelText })
 );
 
 // --- New Room System Components ---
-function RoomGate({ onJoinRoom, onLogin, onEmailLogin, user, showCreateForm, onSetShowCreateForm, onCreateRoom }) {
-    const [roomCode, setRoomCode] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
+function SignUpScreen({ onLogin, onEmailLogin, onSwitchToLogin }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleJoin = async () => {
-        if (!user) {
-            setError('You must be logged in to join a room.');
-            return;
-        }
-        if (!roomCode.trim()) {
-            setError('Please enter a room code.');
+    const handleEmailSignUp = async () => {
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
             return;
         }
         setIsLoading(true);
         setError('');
-        const success = await onJoinRoom(roomCode.trim().toLowerCase());
-        if (!success) {
-            setError('Room not found. Please check the code.');
-            setIsLoading(false);
-        }
+        await onEmailLogin(email, password, true);
+        setIsLoading(false);
     };
 
-    const handleCreateClick = () => {
-        if (user && !user.isAnonymous) {
-            onSetShowCreateForm(true);
-        } else {
-            onLogin(true); 
-        }
-    };
-
-    const handleEmailAuth = () => {
-        if (isCreatingAccount) {
-            if (password !== confirmPassword) {
-                setError('Passwords do not match.');
-                return;
-            }
-            onEmailLogin(email, password, true);
-        } else {
-            onEmailLogin(email, password, false);
-        }
-    };
-    
     return (
         <div className="max-w-md mx-auto text-center animate-fade-in p-8 bg-gray-800 rounded-xl">
-            <h2 className="text-3xl font-bold text-blue-300 mb-4">Welcome!</h2>
-            <p className="text-gray-400 mb-8">Join a room to start or create a new one.</p>
-            
+            <h2 className="text-3xl font-bold text-blue-300 mb-4">Sign Up</h2>
             <div className="bg-gray-700 p-6 rounded-lg">
-                 <h3 className="text-xl font-semibold mb-3">Join an Existing Room</h3>
                 <div className="flex flex-col gap-3">
-                    <input 
-                        type="text"
-                        value={roomCode}
-                        onChange={(e) => setRoomCode(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleJoin()}
-                        placeholder="Enter Room Code"
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email"
                         className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <button onClick={handleJoin} disabled={isLoading || !user} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">
-                        {isLoading ? 'Joining...' : 'Join Room'}
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Password"
+                        className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm Password"
+                        className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button onClick={handleEmailSignUp} disabled={isLoading} className="w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-md hover:bg-purple-700 disabled:bg-gray-500">
+                        {isLoading ? '...' : 'Create Account'}
                     </button>
                     {error && <p className="text-red-400 mt-2">{error}</p>}
-                    {!user && <p className="text-yellow-400 mt-2">You must be logged in to join a room.</p>}
                 </div>
             </div>
-
+            <p className="text-gray-500 my-3">or</p>
+            <button onClick={() => onLogin(false)} className="bg-red-600 text-white font-bold py-3 px-6 rounded-md hover:bg-red-700">
+                Sign up with Google
+            </button>
             <div className="mt-8">
-                <p className="text-gray-500 mb-3">or</p>
-                <div className="bg-gray-700 p-6 rounded-lg">
-                    <h3 className="text-xl font-semibold mb-3">{isCreatingAccount ? 'Create an Account' : 'Sign In'}</h3>
-                    <div className="flex flex-col gap-3">
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Email"
-                            className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Password"
-                            className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        {isCreatingAccount && (
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="Confirm Password"
-                                className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        )}
-                        <button onClick={handleEmailAuth} disabled={isLoading} className="w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-md hover:bg-purple-700 disabled:bg-gray-500">
-                            {isLoading ? '...' : (isCreatingAccount ? 'Create Account' : 'Sign In')}
-                        </button>
-                        <button onClick={() => setIsCreatingAccount(!isCreatingAccount)} className="text-sm text-gray-400 hover:text-white">
-                            {isCreatingAccount ? 'Already have an account? Sign In' : 'Need an account? Create one'}
-                        </button>
-                    </div>
-                </div>
-                <p className="text-gray-500 my-3">or</p>
-                <button onClick={() => onLogin(false)} className="bg-red-600 text-white font-bold py-3 px-6 rounded-md hover:bg-red-700">
-                    Sign in with Google
+                <button onClick={onSwitchToLogin} className="text-sm text-gray-400 hover:text-white">
+                    Already have an account? Sign In
                 </button>
-                <div className="mt-8">
-                    {user && !user.isAnonymous && showCreateForm ? (
-                        <CreateRoom onCreateRoom={onCreateRoom} user={user} />
-                    ) : (
-                        <button onClick={handleCreateClick} disabled={!user} className="bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700 disabled:bg-gray-500">
-                            Create a Room
-                        </button>
-                    )}
-                    {!user && <p className="text-yellow-400 mt-2">You must be logged in to create a room.</p>}
+            </div>
+        </div>
+    );
+}
+
+function LoginScreen({ onLogin, onEmailLogin, onSwitchToSignUp }) {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleEmailLogin = async () => {
+        setIsLoading(true);
+        setError('');
+        await onEmailLogin(email, password, false);
+        setIsLoading(false);
+    };
+
+    return (
+        <div className="max-w-md mx-auto text-center animate-fade-in p-8 bg-gray-800 rounded-xl">
+            <h2 className="text-3xl font-bold text-blue-300 mb-4">Login</h2>
+            <div className="bg-gray-700 p-6 rounded-lg">
+                <div className="flex flex-col gap-3">
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email"
+                        className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Password"
+                        className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button onClick={handleEmailLogin} disabled={isLoading} className="w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-md hover:bg-purple-700 disabled:bg-gray-500">
+                        {isLoading ? '...' : 'Sign In'}
+                    </button>
+                    {error && <p className="text-red-400 mt-2">{error}</p>}
                 </div>
+            </div>
+            <p className="text-gray-500 my-3">or</p>
+            <button onClick={() => onLogin(false)} className="bg-red-600 text-white font-bold py-3 px-6 rounded-md hover:bg-red-700">
+                Sign in with Google
+            </button>
+            <div className="mt-8">
+                <button onClick={onSwitchToSignUp} className="text-sm text-gray-400 hover:text-white">
+                    Need an account? Create one
+                </button>
             </div>
         </div>
     );
@@ -210,7 +198,7 @@ function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart, isR
                     <div key={p.id} className="bg-gray-700 rounded-lg p-3 flex justify-between items-center shadow-md">
                         <span className="font-medium text-lg flex items-center">
                             <span className="text-gray-400 mr-3 w-6 text-right">{i + 1}.</span>
-                            <img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full mr-2" />
+                            <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full mr-2 object-cover" />
                             {p.name}
                         </span>
                         {isRoomCreator && <button onClick={() => onRemovePlayer(p.id)} className="text-red-400 hover:text-red-600 font-bold text-xl">&times;</button>}
@@ -923,12 +911,7 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
 }
 
 function AvatarSelection({ onAvatarSelect, onCancel }) {
-    const avatars = [
-        '/avatars/1.png', '/avatars/2.png', '/avatars/3.png', '/avatars/4.png',
-        '/avatars/5.png', '/avatars/6.png', '/avatars/7.png', '/avatars/8.png',
-        '/avatars/9.png', '/avatars/10.png', '/avatars/11.png', '/avatars/12.png',
-        '/avatars/13.png', '/avatars/14.png', '/avatars/15.png',
-    ];
+    const avatars = Array.from({ length: 15 }, (_, i) => `/avatars/${i + 1}.png`);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
@@ -936,13 +919,14 @@ function AvatarSelection({ onAvatarSelect, onCancel }) {
                 <h3 className="text-xl font-bold text-blue-300 mb-4">Select an Avatar</h3>
                 <div className="grid grid-cols-5 gap-4">
                     {avatars.map(avatar => (
-                        <img
-                            key={avatar}
-                            src={avatar}
-                            alt="avatar"
-                            className="w-24 h-24 rounded-full cursor-pointer hover:ring-4 ring-blue-500"
-                            onClick={() => onAvatarSelect(avatar)}
-                        />
+                        <div key={avatar} className="flex justify-center items-center">
+                            <img
+                                src={avatar}
+                                alt="avatar"
+                                className="w-24 h-24 rounded-full cursor-pointer hover:ring-4 ring-blue-500 object-cover"
+                                onClick={() => onAvatarSelect(avatar)}
+                            />
+                        </div>
                     ))}
                 </div>
                 <div className="flex justify-end mt-6">
@@ -950,6 +934,55 @@ function AvatarSelection({ onAvatarSelect, onCancel }) {
                 </div>
             </div>
         </div>
+    );
+}
+
+function Footer({ onSignOut, onLeaveRoom, roomId, user }) {
+    const [showSignOutModal, setShowSignOutModal] = useState(false);
+    const [showLeaveRoomModal, setShowLeaveRoomModal] = useState(false);
+
+    return (
+        <>
+            {showSignOutModal && (
+                <Modal
+                    title="Sign Out"
+                    message="Are you sure you want to sign out?"
+                    onConfirm={() => {
+                        setShowSignOutModal(false);
+                        onSignOut();
+                    }}
+                    onCancel={() => setShowSignOutModal(false)}
+                    confirmText="Sign Out"
+                />
+            )}
+            {showLeaveRoomModal && (
+                <Modal
+                    title="Leave Room"
+                    message="Are you sure you want to leave the room?"
+                    onConfirm={() => {
+                        setShowLeaveRoomModal(false);
+                        onLeaveRoom();
+                    }}
+                    onCancel={() => setShowLeaveRoomModal(false)}
+                    confirmText="Leave"
+                />
+            )}
+            <footer className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 flex justify-between items-center">
+                <div>
+                    <p className="text-xs text-gray-500">Room: {roomId}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                    {user && !user.isAnonymous && (
+                        <button onClick={() => setShowSignOutModal(true)} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-600 flex items-center">
+                            <LogoutIcon /> Sign Out
+                        </button>
+                    )}
+                    <button onClick={() => setShowLeaveRoomModal(true)} className="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 flex items-center">
+                        <DoorOpenIcon /> Leave Room
+                    </button>
+                </div>
+            </footer>
+        </>
     );
 }
 
@@ -1373,25 +1406,13 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
                 <header className="text-center mb-8 relative">
                     <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 tracking-wider"><TrophyIcon /> Akavin games</h1>
                     <p className="text-gray-400 mt-2">AkaGamestudio © v0.1</p>
-                    <div className="absolute top-0 right-0 flex items-start gap-4">
-                         {user && !user.isAnonymous && (
-                             <button onClick={onSignOut} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-600 flex items-center">
-                                <LogoutIcon /> Sign Out
-                             </button>
-                         )}
-                         <div className="flex flex-col items-center">
-                             <button onClick={onLeaveRoom} className="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 flex items-center">
-                                <DoorOpenIcon /> Leave Room
-                             </button>
-                             <p className="text-xs text-gray-500 mt-1">Room: {roomId}</p>
-                         </div>
-                    </div>
                 </header>
                 <main className="bg-gray-800 rounded-xl shadow-2xl p-6">{renderScreen()}</main>
                  <footer className="text-center mt-8 text-gray-500 text-sm">
                     {user && !user.isAnonymous ? <p>Host: {user.displayName}</p> : <p>Guest User</p>}
                 </footer>
             </div>
+            <Footer onSignOut={onSignOut} onLeaveRoom={onLeaveRoom} roomId={roomId} user={user} />
         </div>
     );
 }
@@ -1408,6 +1429,7 @@ export default function App() {
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [loginIntent, setLoginIntent] = useState(null); // 'create' or null
     const [needsAvatar, setNeedsAvatar] = useState(false);
+    const [showSignUp, setShowSignUp] = useState(false);
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
@@ -1561,7 +1583,7 @@ export default function App() {
 
     const executeAddPlayer = async (avatar, roomId) => {
         if (!firebaseServices) return;
-        const nameToAdd = avatar.split('/').pop().split('.')[0];
+        const nameToAdd = avatar.split('/').pop();
         const playersCollectionRef = collection(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${roomId}/players`);
         const playersSnapshot = await getDocs(playersCollectionRef);
         if (playersSnapshot.size >= 15) {
@@ -1590,18 +1612,78 @@ export default function App() {
         return <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} executeAddPlayer={executeAddPlayer} />;
     }
 
+    if (!user) {
+        return (
+            <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+                {modal && <Modal {...modal} />}
+                {showSignUp ? (
+                    <SignUpScreen
+                        onLogin={handleLogin}
+                        onEmailLogin={handleEmailLogin}
+                        onSwitchToLogin={() => setShowSignUp(false)}
+                    />
+                ) : (
+                    <LoginScreen
+                        onLogin={handleLogin}
+                        onEmailLogin={handleEmailLogin}
+                        onSwitchToSignUp={() => setShowSignUp(true)}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    const [roomCode, setRoomCode] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleJoin = async () => {
+        if (!roomCode.trim()) {
+            setError('Please enter a room code.');
+            return;
+        }
+        setIsLoading(true);
+        setError('');
+        const success = await handleJoinRoom(roomCode.trim().toLowerCase());
+        if (!success) {
+            setError('Room not found. Please check the code.');
+            setIsLoading(false);
+        }
+    };
+
     return (
          <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
             {modal && <Modal {...modal} />}
-            <RoomGate 
-                onJoinRoom={handleJoinRoom} 
-                onCreateRoom={handleCreateRoom}
-                onLogin={handleLogin}
-                onEmailLogin={handleEmailLogin}
-                user={user}
-                showCreateForm={showCreateForm}
-                onSetShowCreateForm={setShowCreateForm}
-            />
+            <div className="max-w-md mx-auto text-center animate-fade-in p-8 bg-gray-800 rounded-xl">
+                <h2 className="text-3xl font-bold text-blue-300 mb-4">Welcome, {user.displayName || user.email}!</h2>
+                <div className="bg-gray-700 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold mb-3">Join an Existing Room</h3>
+                    <div className="flex flex-col gap-3">
+                        <input
+                            type="text"
+                            value={roomCode}
+                            onChange={(e) => setRoomCode(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleJoin()}
+                            placeholder="Enter Room Code"
+                            className="w-full bg-gray-900 text-white placeholder-gray-400 rounded-md px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button onClick={handleJoin} disabled={isLoading} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">
+                            {isLoading ? 'Joining...' : 'Join Room'}
+                        </button>
+                        {error && <p className="text-red-400 mt-2">{error}</p>}
+                    </div>
+                </div>
+                <div className="mt-8">
+                    <p className="text-gray-500 mb-3">or</p>
+                    {showCreateForm ? (
+                        <CreateRoom onCreateRoom={handleCreateRoom} user={user} />
+                    ) : (
+                        <button onClick={() => setShowCreateForm(true)} className="bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700">
+                            Create a Room
+                        </button>
+                    )}
+                </div>
+            </div>
          </div>
     );
 }
