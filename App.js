@@ -217,7 +217,16 @@ function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistor
             <div className="bg-gray-700 rounded-lg shadow-inner p-4">
                 <div className="grid grid-cols-3 gap-4 font-bold text-gray-300 mb-3 px-4"><span>Rank</span><span>Player</span><span className="text-right">Points</span></div>
                 <div className="space-y-2">
-                    {players.length > 0 ? players.map((p, i) => <div key={p.id} className="bg-gray-800 rounded-md p-4 grid grid-cols-3 gap-4 items-center shadow-md"><span className="font-bold text-lg">#{i + 1}</span><span className="truncate">{p.name}</span><span className="text-right font-mono text-lg text-yellow-400">{p.points}</span></div>) : <p className="text-center text-gray-400 py-8">No players registered.</p>}
+                    {players.length > 0 ? players.map((p, i) => (
+                        <div key={p.id} className="bg-gray-800 rounded-md p-4 grid grid-cols-3 gap-4 items-center shadow-md">
+                            <span className="font-bold text-lg">#{i + 1}</span>
+                            <span className="truncate flex items-center">
+                                <img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full mr-2 object-cover" />
+                                {p.name}
+                            </span>
+                            <span className="text-right font-mono text-lg text-yellow-400">{p.points}</span>
+                        </div>
+                    )) : <p className="text-center text-gray-400 py-8">No players registered.</p>}
                 </div>
             </div>
             <div className="mt-8 flex flex-col sm:flex-row justify-center items-center flex-wrap gap-4">
@@ -912,24 +921,33 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
 
 function AvatarSelection({ onAvatarSelect, onCancel }) {
     const avatars = Array.from({ length: 15 }, (_, i) => `/avatars/${i + 1}.png`);
+    const [selectedIndex, setSelectedIndex] = useState(0);
+
+    const handleNext = () => {
+        setSelectedIndex((prevIndex) => (prevIndex + 1) % avatars.length);
+    };
+
+    const handlePrev = () => {
+        setSelectedIndex((prevIndex) => (prevIndex - 1 + avatars.length) % avatars.length);
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
-            <div className="bg-gray-900 text-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-auto border border-gray-700">
-                <h3 className="text-xl font-bold text-blue-300 mb-4">Select an Avatar</h3>
-                <div className="grid grid-cols-5 gap-4">
-                    {avatars.map(avatar => (
-                        <div key={avatar} className="flex justify-center items-center">
-                            <img
-                                src={avatar}
-                                alt="avatar"
-                                className="w-24 h-24 rounded-full cursor-pointer hover:ring-4 ring-blue-500 object-cover"
-                                onClick={() => onAvatarSelect(avatar)}
-                            />
-                        </div>
-                    ))}
+            <div className="bg-gray-900 text-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto border border-gray-700">
+                <h3 className="text-xl font-bold text-blue-300 mb-4 text-center">Select an Avatar</h3>
+                <div className="flex items-center justify-center gap-4">
+                    <button onClick={handlePrev} className="text-4xl">&larr;</button>
+                    <div className="w-48 h-48 rounded-lg overflow-hidden">
+                        <img
+                            src={avatars[selectedIndex]}
+                            alt="avatar"
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    <button onClick={handleNext} className="text-4xl">&rarr;</button>
                 </div>
-                <div className="flex justify-end mt-6">
+                <div className="flex justify-center mt-6 gap-4">
+                    <button onClick={() => onAvatarSelect(avatars[selectedIndex])} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">Select</button>
                     <button onClick={onCancel} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition">Cancel</button>
                 </div>
             </div>
@@ -1586,7 +1604,7 @@ export default function App() {
 
     const executeAddPlayer = async (avatar, roomId) => {
         if (!firebaseServices) return;
-        const nameToAdd = avatar.split('/').pop();
+        const nameToAdd = avatar.split('/').pop().split('.')[0];
         const playersCollectionRef = collection(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${roomId}/players`);
         const playersSnapshot = await getDocs(playersCollectionRef);
         if (playersSnapshot.size >= 15) {
@@ -1643,9 +1661,14 @@ export default function App() {
         }
         setIsLoading(true);
         setError('');
-        const success = await handleJoinRoom(roomCode.trim().toLowerCase());
-        if (!success) {
-            setError('Room not found. Please check the code.');
+        try {
+            const success = await handleJoinRoom(roomCode.trim().toLowerCase());
+            if (!success) {
+                setError('Room not found. Please check the code.');
+            }
+        } catch (error) {
+            setError('An error occurred while joining the room.');
+        } finally {
             setIsLoading(false);
         }
     };
