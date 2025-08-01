@@ -1156,7 +1156,7 @@ function JustFuTournament({ tournament, players, setTournament, onFinish, onCanc
 }
 
 // --- Main App Component ---
-function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvatar }) {
+function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvatar, executeAddPlayer }) {
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     const [screen, setScreen] = useState('scoreboard');
@@ -1430,7 +1430,6 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
                     {user && !user.isAnonymous ? <p>Host: {user.displayName}</p> : <p>Guest User</p>}
                 </footer>
             </div>
-            <Footer onSignOut={onSignOut} onLeaveRoom={onLeaveRoom} roomId={roomId} user={user} />
         </div>
     );
 }
@@ -1630,7 +1629,12 @@ export default function App() {
     }
 
     if (roomId) {
-        return <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} executeAddPlayer={executeAddPlayer} />;
+        return (
+            <>
+                <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} executeAddPlayer={executeAddPlayer} />
+                <Footer onSignOut={handleSignOut} onLeaveRoom={handleLeaveRoom} roomId={roomId} user={user} />
+            </>
+        );
     }
 
     if (!user) {
