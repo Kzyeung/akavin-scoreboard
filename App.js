@@ -920,7 +920,7 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
 }
 
 function AvatarSelection({ onAvatarSelect, onCancel }) {
-    const avatars = Array.from({ length: 15 }, (_, i) => `/avatars/${i + 1}.png`);
+    const avatars = Array.from({ length: 15 }, (_, i) => `avatars/${i + 1}.png`);
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     const handleNext = () => {
@@ -1611,7 +1611,7 @@ export default function App() {
             setModal({ title: 'Player Limit Reached', message: 'You can only register a maximum of 15 players.', onConfirm: () => setModal(null) });
             return;
         }
-        const newPlayer = { name: nameToAdd, points: 0, createdAt: new Date(), avatar };
+        const newPlayer = { name: nameToAdd, points: 0, createdAt: new Date(), avatar: `/${avatar}` };
         try {
             await addDoc(playersCollectionRef, newPlayer);
         } catch (error) {
