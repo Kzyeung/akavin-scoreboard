@@ -920,7 +920,34 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
 }
 
 function AvatarSelection({ onAvatarSelect, onCancel }) {
-    const avatars = Array.from({ length: 15 }, (_, i) => `avatars/${i + 1}.png`);
+    const avatars = [
+        "/avatars/A little help please.png",
+        "/avatars/Anti depressants.png",
+        "/avatars/Anxietea.png",
+        "/avatars/Barely catting on.png",
+        "/avatars/Carrot.png",
+        "/avatars/Cattaplant.png",
+        "/avatars/Chaos.png",
+        "/avatars/Chonky boy.png",
+        "/avatars/Egglift.png",
+        "/avatars/Grab a ghost.png",
+        "/avatars/Happiness potion.png",
+        "/avatars/Happy pills.png",
+        "/avatars/Ice cold killer.png",
+        "/avatars/Kitten nuggets.png",
+        "/avatars/Maki.png",
+        "/avatars/Murderduck.png",
+        "/avatars/Pawsitive.png",
+        "/avatars/Peas was never an option.png",
+        "/avatars/Pigeon toast.png",
+        "/avatars/Rooster.png",
+        "/avatars/Say that again.png",
+        "/avatars/Taco butt.png",
+        "/avatars/Tamago.png",
+        "/avatars/The Great Catsby.png",
+        "/avatars/This is cat.png",
+        "/avatars/Toast.png"
+    ];
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     const handleNext = () => {
@@ -931,21 +958,24 @@ function AvatarSelection({ onAvatarSelect, onCancel }) {
         setSelectedIndex((prevIndex) => (prevIndex - 1 + avatars.length) % avatars.length);
     };
 
+    const avatarName = avatars[selectedIndex].split('/').pop().split('.')[0];
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
             <div className="bg-gray-900 text-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto border border-gray-700">
                 <h3 className="text-xl font-bold text-blue-300 mb-4 text-center">Select an Avatar</h3>
                 <div className="flex items-center justify-center gap-4">
                     <button onClick={handlePrev} className="text-4xl">&larr;</button>
-                    <div className="w-48 h-48 rounded-lg overflow-hidden">
+                    <div className="w-48 h-48 rounded-lg overflow-hidden bg-gray-700">
                         <img
                             src={avatars[selectedIndex]}
-                            alt="avatar"
-                            className="w-full h-full object-cover"
+                            alt={avatarName}
+                            className="w-full h-full object-contain"
                         />
                     </div>
                     <button onClick={handleNext} className="text-4xl">&rarr;</button>
                 </div>
+                <p className="text-center text-lg mt-4 h-6">{avatarName}</p>
                 <div className="flex justify-center mt-6 gap-4">
                     <button onClick={() => onAvatarSelect(avatars[selectedIndex])} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">Select</button>
                     <button onClick={onCancel} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition">Cancel</button>
