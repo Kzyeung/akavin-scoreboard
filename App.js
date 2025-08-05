@@ -736,13 +736,27 @@ function FreeForAllGame({ tournament, setTournament, onFinish, onCancel }) {
         playersWithScores.sort((a, b) => b.score - a.score);
         
         const maxPoints = playersWithScores.length;
+        const results = [];
+        let rank = 1;
 
-        const results = playersWithScores.map((p, i) => ({
-            id: p.id,
-            name: p.name,
-            points: maxPoints - i,
-            rank: i + 1
-        }));
+        for (let i = 0; i < playersWithScores.length; i++) {
+            if (i > 0 && playersWithScores[i].score === playersWithScores[i - 1].score) {
+                results.push({
+                    id: playersWithScores[i].id,
+                    name: playersWithScores[i].name,
+                    points: maxPoints - results[i-1].rank + 1,
+                    rank: results[i-1].rank
+                });
+            } else {
+                rank = i + 1;
+                results.push({
+                    id: playersWithScores[i].id,
+                    name: playersWithScores[i].name,
+                    points: maxPoints - rank + 1,
+                    rank: rank
+                });
+            }
+        }
 
         setFinalResults({ gameName: 'Free For All', results, type: 'ffa' });
     };
