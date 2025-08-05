@@ -921,7 +921,7 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
 
 function AvatarSelection({ onAvatarSelect, onCancel }) {
     const avatars = [
-        "/avatars/A little help please.png",
+        "/avatars/Hanging on.png",
         "/avatars/Anti depressants.png",
         "/avatars/Anxietea.png",
         "/avatars/Barely catting on.png",
@@ -935,18 +935,18 @@ function AvatarSelection({ onAvatarSelect, onCancel }) {
         "/avatars/Happy pills.png",
         "/avatars/Ice cold killer.png",
         "/avatars/Kitten nuggets.png",
-        "/avatars/Maki.png",
+        "/avatars/Maki'n a statement.png",
         "/avatars/Murderduck.png",
         "/avatars/Pawsitive.png",
         "/avatars/Peas was never an option.png",
-        "/avatars/Pigeon toast.png",
-        "/avatars/Rooster.png",
+        "/avatars/In-bread pigeon.png",
+        "/avatars/Crazy mother-clucker.png",
         "/avatars/Say that again.png",
         "/avatars/Taco butt.png",
-        "/avatars/Tamago.png",
+        "/avatars/Eggsecutioner.png",
         "/avatars/The Great Catsby.png",
         "/avatars/This is cat.png",
-        "/avatars/Toast.png"
+        "/avatars/Burnt out.png"
     ];
     const [selectedIndex, setSelectedIndex] = useState(0);
 
