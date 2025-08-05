@@ -5,6 +5,9 @@
     "start": "parcel index.html",
     "build": "parcel build index.html"
   },
+  "staticFiles": {
+  "staticPath": "public"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -17,6 +20,7 @@
   },
   "devDependencies": {
     "buffer": "^6.0.3",
-    "parcel": "^2.15.4"
+    "parcel": "^2.15.4",
+    "parcel-reporter-static-files-copy": "^1.5.3"
   }
 }
