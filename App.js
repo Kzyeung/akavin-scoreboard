@@ -206,23 +206,28 @@ function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart, isR
 }
 
 function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistory, isRoomCreator, currentUserId }) {
+    const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
+
     return (
         <div className="animate-fade-in max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Scoreboard</h2>
             <div className="bg-gray-700 rounded-lg shadow-inner p-4">
-                <div className="grid grid-cols-3 gap-4 font-bold text-gray-300 mb-3 px-4"><span>Rank</span><span>Player</span><span className="text-right">Points</span></div>
+                <div className="flex justify-between font-bold text-gray-300 mb-3 px-4">
+                    <span>Player</span>
+                    <span className="text-right">Points</span>
+                </div>
                 <div className="space-y-2">
-                    {players.length > 0 ? players.map((p, i) => (
-                        <div key={p.id} className="bg-gray-800 rounded-md p-4 grid grid-cols-3 gap-4 items-center shadow-md">
-                            <span className="font-bold text-lg">#{i + 1}</span>
-                            <span className="truncate flex items-center">
-                                <span className="w-6 text-center">
-                                    {p.userId === currentUserId && <span className="text-yellow-400">★</span>}
-                                </span>
-                                <img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-lg mr-2 object-cover" />
-                                {p.name}
-                            </span>
-                            <span className="text-right font-mono text-lg text-yellow-400">{p.points}</span>
+                    {sortedPlayers.length > 0 ? sortedPlayers.map((p, i) => (
+                        <div key={p.id} className="bg-gray-800 rounded-md p-3 flex items-center justify-between shadow-md">
+                            <div className="flex items-center flex-grow min-w-0">
+                                <span className="font-bold text-lg w-10 text-gray-400">#{i + 1}</span>
+                                <div className="w-8 flex-shrink-0 text-center">
+                                    {p.userId === currentUserId && <span className="text-yellow-400 text-lg">★</span>}
+                                </div>
+                                <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-lg mr-3 object-cover flex-shrink-0" />
+                                <span className="font-semibold truncate">{p.name}</span>
+                            </div>
+                            <span className="text-right font-mono text-lg text-yellow-400 ml-4 flex-shrink-0">{p.points}</span>
                         </div>
                     )) : <p className="text-center text-gray-400 py-8">No players registered.</p>}
                 </div>
