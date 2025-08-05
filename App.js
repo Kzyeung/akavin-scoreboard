@@ -994,7 +994,7 @@ function AvatarSelection({ onAvatarSelect, onCancel, players }) {
                         <img
                             src={selectedAvatar}
                             alt="Avatar"
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-cover"
                         />
                     </div>
                     <button onClick={handleNext} className="text-4xl" disabled={availableAvatars.length < 2}>&rarr;</button>
