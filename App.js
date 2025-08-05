@@ -392,7 +392,7 @@ function GameHistory({ history, onBack, onDeleteGame, onRenameGame, isRoomCreato
                                 </span>
                                 <span className="text-right font-mono text-yellow-400">{r.points} pts</span>
                             </div>
-                        )}</div>
+                        )})}</div>
                     </div>
                 )) : <p className="text-center text-gray-400 py-8">No games recorded.</p>}
             </div>
