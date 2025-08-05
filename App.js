@@ -205,7 +205,7 @@ function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart, isR
     );
 }
 
-function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistory, isRoomCreator, creatorId }) {
+function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistory, isRoomCreator, currentUserId }) {
     return (
         <div className="animate-fade-in max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Scoreboard</h2>
@@ -216,8 +216,10 @@ function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistor
                         <div key={p.id} className="bg-gray-800 rounded-md p-4 grid grid-cols-3 gap-4 items-center shadow-md">
                             <span className="font-bold text-lg">#{i + 1}</span>
                             <span className="truncate flex items-center">
-                                {p.userId === creatorId && <span className="text-yellow-400 mr-2">★</span>}
-                                <img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full mr-2 object-cover" />
+                                <span className="w-6 text-center">
+                                    {p.userId === currentUserId && <span className="text-yellow-400">★</span>}
+                                </span>
+                                <img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-lg mr-2 object-cover" />
                                 {p.name}
                             </span>
                             <span className="text-right font-mono text-lg text-yellow-400">{p.points}</span>
@@ -988,7 +990,7 @@ function AvatarSelection({ onAvatarSelect, onCancel, players }) {
                 <h3 className="text-xl font-bold text-blue-300 mb-4 text-center">Select an Avatar</h3>
                 <div className="flex items-center justify-center gap-4">
                     <button onClick={handlePrev} className="text-4xl" disabled={availableAvatars.length < 2}>&larr;</button>
-                    <div className="w-48 h-48 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
+                    <div className="w-48 h-48 rounded-lg overflow-hidden bg-gray-700 flex items-center justify-center">
                         <img
                             src={selectedAvatar}
                             alt="Avatar"
@@ -1451,7 +1453,7 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
     const renderScreen = () => {
         switch (screen) {
             case 'register': return <PlayerRegistration {...{ players, onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isRoomCreator }} />;
-            case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history'), isRoomCreator, creatorId }} />;
+            case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history'), isRoomCreator, currentUserId: user.uid }} />;
             case 'play_menu': return <PlayMenu {...{ tournament, players, onCreateTournament: createTournament, onResume: handleResume, onAddPoints: () => setScreen('add_points'), onBack: () => setScreen('scoreboard') }} />;
             case 'add_points': return <AddPoints {...{ players, onConfirm: handleAddPointsAndHistory, onCancel: () => setScreen('play_menu') }} />;
             case 'history': return <GameHistory {...{ history: gameHistory, onBack: () => setScreen('scoreboard'), onDeleteGame: handleDeleteGame, onRenameGame: handleUpdateGameName, isRoomCreator }} />;
