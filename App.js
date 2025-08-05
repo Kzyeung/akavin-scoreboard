@@ -219,13 +219,13 @@ function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistor
                 <div className="space-y-2">
                     {sortedPlayers.length > 0 ? sortedPlayers.map((p, i) => (
                         <div key={p.id} className="bg-gray-800 rounded-md p-3 flex items-center justify-between shadow-md">
-                            <div className="flex items-center flex-grow min-w-0">
-                                <span className="font-bold text-lg w-10 text-gray-400">#{i + 1}</span>
+                            <div className="flex items-center flex-1 min-w-0">
+                                <span className="font-bold text-lg w-10 text-gray-400 flex-shrink-0">#{i + 1}</span>
                                 <div className="w-8 flex-shrink-0 text-center">
                                     {p.userId === currentUserId && <span className="text-yellow-400 text-lg">★</span>}
                                 </div>
-                                <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-lg mr-3 object-cover flex-shrink-0" />
-                                <span className="font-semibold">{p.name}</span>
+                                <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-lg mx-3 object-cover flex-shrink-0" />
+                                <span className="font-semibold text-sm">{p.name}</span>
                             </div>
                             <span className="text-right font-mono text-lg text-yellow-400 ml-4 flex-shrink-0">{p.points}</span>
                         </div>
@@ -1057,7 +1057,7 @@ function Footer({ onSignOut, onLeaveRoom, roomId, user }) {
                     confirmText="Leave"
                 />
             )}
-            <footer className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 flex justify-between items-center">
+            <footer className="bg-gray-800 p-4 flex justify-between items-center mt-8">
                 <div>
                     <p className="text-xs text-gray-500">Room: {roomId}</p>
                 </div>
@@ -1498,6 +1498,7 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
                     {user && !user.isAnonymous ? <p>Host: {user.displayName}</p> : <p>Guest User</p>}
                 </footer>
             </div>
+            <Footer onSignOut={onSignOut} onLeaveRoom={onLeaveRoom} roomId={roomId} user={user} />
         </div>
     );
 }
@@ -1722,10 +1723,7 @@ export default function App() {
 
     if (roomId) {
         return (
-            <>
-                <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} executeAddPlayer={executeAddPlayer} players={players} />
-                <Footer onSignOut={handleSignOut} onLeaveRoom={handleLeaveRoom} roomId={roomId} user={user} />
-            </>
+            <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} executeAddPlayer={executeAddPlayer} players={players} />
         );
     }
 
