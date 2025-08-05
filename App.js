@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, getDocs, getDoc, query, updateDoc, orderBy, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, getDocs, getDoc, query, where, updateDoc, orderBy, setDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from './firebaseConfig.js';
 
@@ -187,13 +187,8 @@ function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart, isR
     const sortedPlayers = [...players].sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
     return (
         <div className="animate-fade-in max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Register Players</h2>
-            {isRoomCreator && (
-                <div className="flex flex-col sm:flex-row gap-2 mb-6">
-                    <button onClick={onAddPlayer} disabled={players.length >= 15} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-500">Add Player</button>
-                </div>
-            )}
-            <div className="space-y-3">
+            <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Players in Room</h2>
+            <div className="space-y-3 mt-6">
                 {sortedPlayers.map((p, i) => (
                     <div key={p.id} className="bg-gray-700 rounded-lg p-3 flex justify-between items-center shadow-md">
                         <span className="font-medium text-lg flex items-center">
@@ -210,7 +205,7 @@ function PlayerRegistration({ players, onAddPlayer, onRemovePlayer, onStart, isR
     );
 }
 
-function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistory, isRoomCreator }) {
+function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistory, isRoomCreator, creatorId }) {
     return (
         <div className="animate-fade-in max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-6 text-blue-300">Scoreboard</h2>
@@ -221,6 +216,7 @@ function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistor
                         <div key={p.id} className="bg-gray-800 rounded-md p-4 grid grid-cols-3 gap-4 items-center shadow-md">
                             <span className="font-bold text-lg">#{i + 1}</span>
                             <span className="truncate flex items-center">
+                                {p.userId === creatorId && <span className="text-yellow-400 mr-2">★</span>}
                                 <img src={p.avatar} alt={p.name} className="w-8 h-8 rounded-full mr-2 object-cover" />
                                 {p.name}
                             </span>
@@ -919,8 +915,8 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
     );
 }
 
-function AvatarSelection({ onAvatarSelect, onCancel }) {
-    const avatars = [
+function AvatarSelection({ onAvatarSelect, onCancel, players }) {
+    const allAvatars = [
         "/avatars/Hanging on.png",
         "/avatars/Anti depressants.png",
         "/avatars/Anxietea.png",
@@ -948,36 +944,61 @@ function AvatarSelection({ onAvatarSelect, onCancel }) {
         "/avatars/This is cat.png",
         "/avatars/Burnt out.png"
     ];
+
+    const availableAvatars = useMemo(() => {
+        const usedAvatars = new Set(players.map(p => p.avatar));
+        return allAvatars.filter(a => !usedAvatars.has(a));
+    }, [players]);
+
     const [selectedIndex, setSelectedIndex] = useState(0);
 
+    useEffect(() => {
+        if (selectedIndex >= availableAvatars.length && availableAvatars.length > 0) {
+            setSelectedIndex(0);
+        }
+    }, [availableAvatars, selectedIndex]);
+
     const handleNext = () => {
-        setSelectedIndex((prevIndex) => (prevIndex + 1) % avatars.length);
+        setSelectedIndex((prevIndex) => (prevIndex + 1) % availableAvatars.length);
     };
 
     const handlePrev = () => {
-        setSelectedIndex((prevIndex) => (prevIndex - 1 + avatars.length) % avatars.length);
+        setSelectedIndex((prevIndex) => (prevIndex - 1 + availableAvatars.length) % availableAvatars.length);
     };
 
-    const avatarName = avatars[selectedIndex].split('/').pop().split('.')[0];
+    const selectedAvatar = availableAvatars[selectedIndex];
+
+    if (availableAvatars.length === 0 && players.length > 0) {
+        return (
+             <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
+                <div className="bg-gray-900 text-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto border border-gray-700">
+                    <h3 className="text-xl font-bold text-blue-300 mb-4 text-center">Select an Avatar</h3>
+                    <p className="text-center text-gray-400 my-4">No more avatars available!</p>
+                    <div className="flex justify-center mt-6">
+                        <button onClick={onCancel} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition">Back</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
             <div className="bg-gray-900 text-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto border border-gray-700">
                 <h3 className="text-xl font-bold text-blue-300 mb-4 text-center">Select an Avatar</h3>
                 <div className="flex items-center justify-center gap-4">
-                    <button onClick={handlePrev} className="text-4xl">&larr;</button>
-                    <div className="w-48 h-48 rounded-lg overflow-hidden bg-gray-700">
+                    <button onClick={handlePrev} className="text-4xl" disabled={availableAvatars.length < 2}>&larr;</button>
+                    <div className="w-48 h-48 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
                         <img
-                            src={avatars[selectedIndex]}
-                            alt={avatarName}
+                            src={selectedAvatar}
+                            alt="Avatar"
                             className="w-full h-full object-contain"
                         />
                     </div>
-                    <button onClick={handleNext} className="text-4xl">&rarr;</button>
+                    <button onClick={handleNext} className="text-4xl" disabled={availableAvatars.length < 2}>&rarr;</button>
                 </div>
-                <p className="text-center text-lg mt-4 h-6">{avatarName}</p>
-                <div className="flex justify-center mt-6 gap-4">
-                    <button onClick={() => onAvatarSelect(avatars[selectedIndex])} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">Select</button>
+                <div className="flex justify-center mt-12 gap-4">
+                    <button onClick={() => onAvatarSelect(selectedAvatar)} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition" disabled={!selectedAvatar}>Select</button>
                     <button onClick={onCancel} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition">Cancel</button>
                 </div>
             </div>
@@ -1186,15 +1207,15 @@ function JustFuTournament({ tournament, players, setTournament, onFinish, onCanc
 }
 
 // --- Main App Component ---
-function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvatar, executeAddPlayer }) {
+function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvatar, executeAddPlayer, players }) {
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     const [screen, setScreen] = useState('scoreboard');
-    const [players, setPlayers] = useState([]);
     const [gameHistory, setGameHistory] = useState([]);
     const [tournament, setTournament] = useState(null);
     const [modal, setModal] = useState(null);
     const [isRoomCreator, setIsRoomCreator] = useState(false);
+    const [creatorId, setCreatorId] = useState(null);
     
     const hasPointsAwarded = players.some(p => p.points > 0);
 
@@ -1203,8 +1224,12 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
             if (!user) return;
             const roomDocRef = doc(db, `artifacts/${appId}/public/data/rooms/${roomId}`);
             const roomDoc = await getDoc(roomDocRef);
-            if (roomDoc.exists() && roomDoc.data().createdBy === user.uid) {
-                setIsRoomCreator(true);
+            if (roomDoc.exists()) {
+                const roomData = roomDoc.data();
+                setCreatorId(roomData.createdBy);
+                if (roomData.createdBy === user.uid) {
+                    setIsRoomCreator(true);
+                }
             }
         };
         checkRoomCreator();
@@ -1214,21 +1239,13 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
     useEffect(() => {
         if (!db || !roomId) return;
         console.log(`Setting up listeners for room: ${roomId}`);
-        const playersPath = `artifacts/${appId}/public/data/rooms/${roomId}/players`;
         const historyPath = `artifacts/${appId}/public/data/rooms/${roomId}/games`;
         
-        const playersQuery = query(collection(db, playersPath));
-        const unsubPlayers = onSnapshot(playersQuery, snap => {
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.points - a.points);
-            setPlayers(data);
-        }, (error) => console.error("Player listener error:", error));
-
         const historyQuery = query(collection(db, historyPath), orderBy('createdAt', 'desc'));
         const unsubHistory = onSnapshot(historyQuery, snap => setGameHistory(snap.docs.map(d => ({ id: d.id, ...d.data() }))), (error) => console.error("History listener error:", error));
         
         return () => { 
             console.log("Cleaning up listeners.");
-            unsubPlayers(); 
             unsubHistory(); 
         };
     }, [db, roomId, appId]);
@@ -1433,8 +1450,8 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
     // --- Rendering ---
     const renderScreen = () => {
         switch (screen) {
-            case 'register': return <PlayerRegistration {...{ players, onAddPlayer: handleAddPlayer, onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isRoomCreator }} />;
-            case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history'), isRoomCreator }} />;
+            case 'register': return <PlayerRegistration {...{ players, onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isRoomCreator }} />;
+            case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history'), isRoomCreator, creatorId }} />;
             case 'play_menu': return <PlayMenu {...{ tournament, players, onCreateTournament: createTournament, onResume: handleResume, onAddPoints: () => setScreen('add_points'), onBack: () => setScreen('scoreboard') }} />;
             case 'add_points': return <AddPoints {...{ players, onConfirm: handleAddPointsAndHistory, onCancel: () => setScreen('play_menu') }} />;
             case 'history': return <GameHistory {...{ history: gameHistory, onBack: () => setScreen('scoreboard'), onDeleteGame: handleDeleteGame, onRenameGame: handleUpdateGameName, isRoomCreator }} />;
@@ -1443,7 +1460,7 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
             case 'free_for_all_game': return <FreeForAllGame {...{ tournament, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'mario_kart_tournament': return <MarioKartTournament {...{ tournament, players, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'just_fu_tournament': return <JustFuTournament {...{ tournament, players, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
-            default: return <PlayerRegistration {...{ players, newPlayerName, setNewPlayerName, onAddPlayer: () => setNeedsAvatar(true), onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isRoomCreator }} />;
+            default: return <PlayerRegistration {...{ players, onRemovePlayer: handleRemovePlayer, onStart: () => setScreen('scoreboard'), isRoomCreator }} />;
         }
     };
     
@@ -1471,6 +1488,7 @@ export default function App() {
     const [user, setUser] = useState(null);
     const [isAuthReady, setIsAuthReady] = useState(false);
     const [roomId, setRoomId] = useState(null);
+    const [players, setPlayers] = useState([]);
     const [isLoadingRoom, setIsLoadingRoom] = useState(true);
     const [modal, setModal] = useState(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -1526,6 +1544,20 @@ export default function App() {
         setIsLoadingRoom(false);
     }, []);
 
+    useEffect(() => {
+        if (!firebaseServices || !roomId) {
+            setPlayers([]);
+            return;
+        };
+        const playersPath = `artifacts/${appId}/public/data/rooms/${roomId}/players`;
+        const playersQuery = query(collection(firebaseServices.db, playersPath), orderBy('createdAt', 'desc'));
+        const unsub = onSnapshot(playersQuery, snap => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setPlayers(data);
+        });
+        return unsub;
+    }, [firebaseServices, roomId, appId]);
+
     // --- Room Logic ---
     const handleLogin = async (isCreating = false) => {
         if (!firebaseServices) return;
@@ -1574,13 +1606,21 @@ export default function App() {
     };
 
     const handleJoinRoom = async (code) => {
-        if (!firebaseServices) return false;
+        if (!firebaseServices || !user) return false;
         const roomDocRef = doc(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${code}`);
         try {
             const docSnap = await getDoc(roomDocRef);
             if (docSnap.exists()) {
+                const playersCollectionRef = collection(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${code}/players`);
+                const q = query(playersCollectionRef, where("userId", "==", user.uid));
+                const existingPlayerSnap = await getDocs(q);
+
                 localStorage.setItem('akavin-room-id', code);
                 setRoomId(code);
+
+                if (existingPlayerSnap.empty) {
+                    setNeedsAvatar(true);
+                }
                 return true;
             }
             return false;
@@ -1613,6 +1653,7 @@ export default function App() {
             console.log(`Room '${code}' created successfully.`);
             localStorage.setItem('akavin-room-id', code);
             setRoomId(code);
+            setNeedsAvatar(true);
             return true;
         } catch (error) {
             console.error("FATAL: Error creating room:", error);
@@ -1632,7 +1673,7 @@ export default function App() {
     };
 
     const executeAddPlayer = async (avatar, roomId) => {
-        if (!firebaseServices) return;
+        if (!firebaseServices || !user) return;
         const nameToAdd = avatar.split('/').pop().split('.')[0];
         const playersCollectionRef = collection(firebaseServices.db, `artifacts/${appId}/public/data/rooms/${roomId}/players`);
         const playersSnapshot = await getDocs(playersCollectionRef);
@@ -1640,7 +1681,7 @@ export default function App() {
             setModal({ title: 'Player Limit Reached', message: 'You can only register a maximum of 15 players.', onConfirm: () => setModal(null) });
             return;
         }
-        const newPlayer = { name: nameToAdd, points: 0, createdAt: new Date(), avatar };
+        const newPlayer = { name: nameToAdd, points: 0, createdAt: new Date(), avatar, userId: user.uid };
         try {
             await addDoc(playersCollectionRef, newPlayer);
         } catch (error) {
@@ -1655,13 +1696,13 @@ export default function App() {
     }
 
     if (needsAvatar) {
-        return <AvatarSelection onAvatarSelect={(avatar) => executeAddPlayer(avatar, roomId)} onCancel={() => setNeedsAvatar(false)} />;
+        return <AvatarSelection onAvatarSelect={(avatar) => executeAddPlayer(avatar, roomId)} onCancel={() => setNeedsAvatar(false)} players={players} />;
     }
 
     if (roomId) {
         return (
             <>
-                <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} executeAddPlayer={executeAddPlayer} />
+                <ScoreboardApp roomId={roomId} onLeaveRoom={handleLeaveRoom} onSignOut={handleSignOut} user={user} db={firebaseServices.db} setNeedsAvatar={setNeedsAvatar} executeAddPlayer={executeAddPlayer} players={players} />
                 <Footer onSignOut={handleSignOut} onLeaveRoom={handleLeaveRoom} roomId={roomId} user={user} />
             </>
         );
