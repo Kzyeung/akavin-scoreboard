@@ -225,7 +225,7 @@ function Scoreboard({ players, onPlay, onGoToRegister, onResetGame, onShowHistor
                                     {p.userId === currentUserId && <span className="text-yellow-400 text-lg">★</span>}
                                 </div>
                                 <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-lg mr-3 object-cover flex-shrink-0" />
-                                <span className="font-semibold truncate">{p.name}</span>
+                                <span className="font-semibold">{p.name}</span>
                             </div>
                             <span className="text-right font-mono text-lg text-yellow-400 ml-4 flex-shrink-0">{p.points}</span>
                         </div>
