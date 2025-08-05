@@ -312,9 +312,10 @@ function AddPoints({ players, onConfirm, onCancel, tournamentResults = null }) {
             <div className="space-y-2">
                 {(tournamentResults ? tournamentResults.results : sortedPlayers).map((p, i) => (
                     <div key={p.id} className="bg-gray-700 rounded-lg p-3 flex justify-between items-center shadow-md">
-                        <div className="flex items-center">
+                        <div className="flex items-center min-w-0">
                             {tournamentResults && <span className="font-bold text-lg text-yellow-400 w-8 text-left mr-4">#{i + 1}</span>}
-                            <span className="font-medium">{p.name}</span>
+                            <img src={players.find(pl => pl.id === p.id)?.avatar} alt={p.name} className="w-8 h-8 rounded-lg mr-3 object-cover" />
+                            <span className="font-medium truncate">{p.name}</span>
                         </div>
                         <div className="flex items-center gap-2"><label className="text-sm text-gray-400">Points:</label><input type="number" value={points[p.id] || ''} onChange={(e) => handlePointChange(p.id, e.target.value)} className="bg-gray-900 w-20 text-white text-center font-mono rounded-md py-1 px-2 focus:outline-none" /></div>
                     </div>
@@ -330,7 +331,7 @@ function AddPoints({ players, onConfirm, onCancel, tournamentResults = null }) {
     );
 }
 
-function GameHistory({ history, onBack, onDeleteGame, onRenameGame, isRoomCreator }) {
+function GameHistory({ history, onBack, onDeleteGame, onRenameGame, isRoomCreator, players }) {
     const [editingGameId, setEditingGameId] = useState(null);
     const [newGameName, setNewGameName] = useState('');
 
@@ -372,9 +373,12 @@ function GameHistory({ history, onBack, onDeleteGame, onRenameGame, isRoomCreato
                             <h3 className="text-xl font-bold text-purple-300 pr-16">{game.gameName}</h3>
                         )}
                         <p className="text-sm text-gray-400 mb-3">{new Date(game.createdAt?.seconds * 1000).toLocaleString()}</p>
-                        <div className="space-y-2">{game.results.map(r => 
+                        <div className="space-y-2">{game.results.map(r => {
+                            const player = players.find(p => p.id === r.id);
+                            return (
                             <div key={r.id} className="bg-gray-800 rounded p-2 grid grid-cols-3 items-center">
-                                <span className="font-semibold truncate">
+                                <span className="font-semibold truncate flex items-center">
+                                    {player && <img src={player.avatar} alt={r.name} className="w-6 h-6 rounded-lg mr-2 object-cover" />}
                                     {game.type !== '1v1' && `#${r.rank} `}{r.name}
                                 </span>
                                 <span className="text-center font-mono">
@@ -611,13 +615,29 @@ function SwissTournament({ tournament, setTournament, players, onFinish, onCance
                     <div className="flex flex-col space-y-2">
                         <div className="grid grid-cols-4 font-bold text-gray-400 px-2"><span>Rank</span><span>Player</span><span className="text-center">Wins</span><span className="text-center">Losses</span></div>
                         {leftColumn.map((player, index) => (
-                            <div key={player.id} className="grid grid-cols-4 bg-gray-700 p-2 rounded-md items-center"><span>#{index + 1}</span><span className="truncate">{player.name}</span><span className="text-center font-mono text-green-400">{player.wins}</span><span className="text-center font-mono text-red-400">{player.losses}</span></div>
+                            <div key={player.id} className="grid grid-cols-4 bg-gray-700 p-2 rounded-md items-center">
+                                <span>#{index + 1}</span>
+                                <span className="truncate flex items-center">
+                                    <img src={player.avatar} alt={player.name} className="w-6 h-6 rounded-lg mr-2 object-cover" />
+                                    {player.name}
+                                </span>
+                                <span className="text-center font-mono text-green-400">{player.wins}</span>
+                                <span className="text-center font-mono text-red-400">{player.losses}</span>
+                            </div>
                         ))}
                     </div>
                      <div className="flex flex-col space-y-2">
                         <div className="grid grid-cols-4 font-bold text-gray-400 px-2"><span>Rank</span><span>Player</span><span className="text-center">Wins</span><span className="text-center">Losses</span></div>
                         {rightColumn.map((player, index) => (
-                            <div key={player.id} className="grid grid-cols-4 bg-gray-700 p-2 rounded-md items-center"><span>#{midPoint + index + 1}</span><span className="truncate">{player.name}</span><span className="text-center font-mono text-green-400">{player.wins}</span><span className="text-center font-mono text-red-400">{player.losses}</span></div>
+                            <div key={player.id} className="grid grid-cols-4 bg-gray-700 p-2 rounded-md items-center">
+                                <span>#{midPoint + index + 1}</span>
+                                <span className="truncate flex items-center">
+                                    <img src={player.avatar} alt={player.name} className="w-6 h-6 rounded-lg mr-2 object-cover" />
+                                    {player.name}
+                                </span>
+                                <span className="text-center font-mono text-green-400">{player.wins}</span>
+                                <span className="text-center font-mono text-red-400">{player.losses}</span>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -631,9 +651,15 @@ function SwissTournament({ tournament, setTournament, players, onFinish, onCance
                             {currentMatchesByBracket[winBracket].map(match => (
                                 <div key={match.matchId} className={`bg-gray-700 rounded-lg p-4 shadow-md`}>
                                     <div className="flex justify-around items-center">
-                                        <button onClick={() => handleSelectWinner(match.matchId, match.p1.id)} className={`flex-1 text-lg font-semibold p-3 rounded-md transition truncate mx-2 ${match.winner === match.p1.id ? 'bg-green-600' : 'bg-gray-800 hover:bg-blue-600'}`}>{match.p1.name}</button>
+                                        <button onClick={() => handleSelectWinner(match.matchId, match.p1.id)} className={`flex-1 text-lg font-semibold p-3 rounded-md transition truncate mx-2 ${match.winner === match.p1.id ? 'bg-green-600' : 'bg-gray-800 hover:bg-blue-600'} flex items-center justify-center`}>
+                                            <img src={match.p1.avatar} alt={match.p1.name} className="w-8 h-8 rounded-lg mr-3 object-cover" />
+                                            {match.p1.name}
+                                        </button>
                                         <VsIcon />
-                                        <button onClick={() => handleSelectWinner(match.matchId, match.p2.id)} disabled={match.p2.id === 'bye'} className={`flex-1 text-lg font-semibold p-3 rounded-md transition truncate mx-2 ${match.winner === match.p2.id ? 'bg-green-600' : 'bg-gray-800 hover:bg-blue-600'}`}>{match.p2.name}</button>
+                                        <button onClick={() => handleSelectWinner(match.matchId, match.p2.id)} disabled={match.p2.id === 'bye'} className={`flex-1 text-lg font-semibold p-3 rounded-md transition truncate mx-2 ${match.winner === match.p2.id ? 'bg-green-600' : 'bg-gray-800 hover:bg-blue-600'} flex items-center justify-center`}>
+                                            {match.p2.id !== 'bye' && <img src={match.p2.avatar} alt={match.p2.name} className="w-8 h-8 rounded-lg mr-3 object-cover" />}
+                                            {match.p2.name}
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -702,7 +728,12 @@ function TeamBasedGame({ tournament, setTournament, onFinish, onCancel }) {
                 <div className="bg-gray-700 p-4 rounded-lg">
                     <h3 className="text-xl font-bold text-center mb-4 text-red-400">Team A</h3>
                     <div className="space-y-2 mb-4">
-                        {teamA.map(p => <div key={p.id} className="bg-gray-800 p-2 rounded text-center">{p.name}</div>)}
+                        {teamA.map(p => (
+                            <div key={p.id} className="bg-gray-800 p-2 rounded flex items-center justify-center">
+                                <img src={p.avatar} alt={p.name} className="w-6 h-6 rounded-lg mr-2 object-cover" />
+                                {p.name}
+                            </div>
+                        ))}
                     </div>
                     <input type="number" value={scoreA} onChange={e => handleScoreChange('A', e.target.value)} className="w-full bg-gray-900 text-white text-center font-mono text-2xl rounded-md py-2 px-2 focus:outline-none" placeholder="Score"/>
                 </div>
@@ -710,7 +741,12 @@ function TeamBasedGame({ tournament, setTournament, onFinish, onCancel }) {
                 <div className="bg-gray-700 p-4 rounded-lg">
                     <h3 className="text-xl font-bold text-center mb-4 text-blue-400">Team B</h3>
                      <div className="space-y-2 mb-4">
-                        {teamB.map(p => <div key={p.id} className="bg-gray-800 p-2 rounded text-center">{p.name}</div>)}
+                        {teamB.map(p => (
+                            <div key={p.id} className="bg-gray-800 p-2 rounded flex items-center justify-center">
+                                <img src={p.avatar} alt={p.name} className="w-6 h-6 rounded-lg mr-2 object-cover" />
+                                {p.name}
+                            </div>
+                        ))}
                     </div>
                     <input type="number" value={scoreB} onChange={e => handleScoreChange('B', e.target.value)} className="w-full bg-gray-900 text-white text-center font-mono text-2xl rounded-md py-2 px-2 focus:outline-none" placeholder="Score"/>
                 </div>
@@ -782,7 +818,10 @@ function FreeForAllGame({ tournament, setTournament, onFinish, onCancel }) {
             <div className="space-y-3">
                 {tournament.players.map(player => (
                     <div key={player.id} className="bg-gray-700 rounded-lg p-3 flex justify-between items-center shadow-md">
-                        <span className="font-medium text-lg">{player.name}</span>
+                        <div className="flex items-center">
+                            <img src={player.avatar} alt={player.name} className="w-8 h-8 rounded-lg mr-3 object-cover" />
+                            <span className="font-medium text-lg">{player.name}</span>
+                        </div>
                         <div className="flex items-center gap-2">
                             <label htmlFor={`score-${player.id}`} className="text-sm text-gray-400">Score:</label>
                             <input
@@ -895,8 +934,9 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
                                 <div className="space-y-2">
                                     {tournament.groups[key].map((p, i) => (
                                         <div key={p.id} draggable onDragStart={() => (dragPlayer.current = i)} onDragEnter={() => (dragOverPlayer.current = i)} onDragEnd={() => handleGroupSort(key, tournament.groups[key])} onDragOver={(e) => e.preventDefault()} className="bg-gray-800 p-3 rounded-md cursor-grab active:cursor-grabbing flex items-center gap-4">
-                                            <span className="font-bold text-lg text-yellow-400">#{i + 1}</span>
-                                            <span>{p.name}</span>
+                                            <span className="font-bold text-lg text-yellow-400 w-8">#{i + 1}</span>
+                                            <img src={p.avatar} alt={p.name} className="w-6 h-6 rounded-lg object-cover" />
+                                            <span className="truncate">{p.name}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -919,8 +959,9 @@ function MarioKartTournament({ tournament, players, setTournament, onFinish, onC
                                 <div className="space-y-2">
                                     {tournament.finals[key].players.map((p, i) => (
                                         <div key={p.id} draggable onDragStart={() => (dragPlayer.current = i)} onDragEnter={() => (dragOverPlayer.current = i)} onDragEnd={() => handleFinalsSort(key, tournament.finals[key].players)} onDragOver={(e) => e.preventDefault()} className="bg-gray-800 p-3 rounded-md cursor-grab active:cursor-grabbing flex items-center gap-4">
-                                            <span className="font-bold text-lg text-yellow-400">#{i + 1}</span>
-                                            <span>{p.name}</span>
+                                            <span className="font-bold text-lg text-yellow-400 w-8">#{i + 1}</span>
+                                            <img src={p.avatar} alt={p.name} className="w-6 h-6 rounded-lg object-cover" />
+                                            <span className="truncate">{p.name}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -1186,7 +1227,10 @@ function JustFuTournament({ tournament, players, setTournament, onFinish, onCanc
                                 <div className="space-y-2">
                                     {tournament.groups[key].map(p => (
                                         <div key={p.id} className="bg-gray-800 p-3 rounded-md flex justify-between items-center">
-                                            <span>{p.name}</span>
+                                            <div className="flex items-center min-w-0">
+                                                <img src={p.avatar} alt={p.name} className="w-6 h-6 rounded-lg mr-2 object-cover" />
+                                                <span className="truncate">{p.name}</span>
+                                            </div>
                                             <input type="number" value={scores[p.id] || ''} onChange={(e) => handleScoreChange(p.id, e.target.value)} className="bg-gray-900 w-20 text-white text-center font-mono rounded-md py-1 px-2 focus:outline-none" />
                                         </div>
                                     ))}
@@ -1210,7 +1254,10 @@ function JustFuTournament({ tournament, players, setTournament, onFinish, onCanc
                                 <div className="space-y-2">
                                     {tournament.finals[key].players.map(p => (
                                         <div key={p.id} className="bg-gray-800 p-3 rounded-md flex justify-between items-center">
-                                            <span>{p.name}</span>
+                                            <div className="flex items-center min-w-0">
+                                                <img src={p.avatar} alt={p.name} className="w-6 h-6 rounded-lg mr-2 object-cover" />
+                                                <span className="truncate">{p.name}</span>
+                                            </div>
                                             <input type="number" value={tournament.finals[key].scores[p.id] || ''} onChange={(e) => handleFinalScoreChange(key, p.id, e.target.value)} className="bg-gray-900 w-20 text-white text-center font-mono rounded-md py-1 px-2 focus:outline-none" />
                                         </div>
                                     ))}
@@ -1475,7 +1522,7 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
             case 'scoreboard': return <Scoreboard {...{ players, onPlay: () => setScreen('play_menu'), onGoToRegister: () => setScreen('register'), onResetGame: resetGame, onShowHistory: () => setScreen('history'), isRoomCreator, currentUserId: user.uid }} />;
             case 'play_menu': return <PlayMenu {...{ tournament, players, onCreateTournament: createTournament, onResume: handleResume, onAddPoints: () => setScreen('add_points'), onBack: () => setScreen('scoreboard') }} />;
             case 'add_points': return <AddPoints {...{ players, onConfirm: handleAddPointsAndHistory, onCancel: () => setScreen('play_menu') }} />;
-            case 'history': return <GameHistory {...{ history: gameHistory, onBack: () => setScreen('scoreboard'), onDeleteGame: handleDeleteGame, onRenameGame: handleUpdateGameName, isRoomCreator }} />;
+            case 'history': return <GameHistory {...{ history: gameHistory, onBack: () => setScreen('scoreboard'), onDeleteGame: handleDeleteGame, onRenameGame: handleUpdateGameName, isRoomCreator, players }} />;
             case '1v1_tournament': return <SwissTournament {...{ tournament, setTournament, players, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'team_based_game': return <TeamBasedGame {...{ tournament, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
             case 'free_for_all_game': return <FreeForAllGame {...{ tournament, setTournament, onFinish: handleAddPointsAndHistory, onCancel: () => setScreen('scoreboard') }} />;
