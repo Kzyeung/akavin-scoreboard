@@ -1453,7 +1453,7 @@ function ScoreboardApp({ roomId, onLeaveRoom, onSignOut, user, db, setNeedsAvata
             <div className="max-w-full mx-auto">
                 <header className="text-center mb-8 relative">
                     <h1 className="text-4xl sm:text-5xl font-bold text-blue-400 tracking-wider"><TrophyIcon /> Akavin games</h1>
-                    <p className="text-gray-400 mt-2">AkaGamestudio © v0.1</p>
+                    <p className="text-gray-400 mt-2">AkaGamestudio © v0.2</p>
                 </header>
                 <main className="bg-gray-800 rounded-xl shadow-2xl p-6">{renderScreen()}</main>
                  <footer className="text-center mt-8 text-gray-500 text-sm">

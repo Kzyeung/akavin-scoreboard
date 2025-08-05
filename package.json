@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "scripts": {
     "start": "parcel index.html",
-    "build": "parcel build index.html"
+    "build": "cpx \"public/**/*\" dist && parcel build index.html"
   },
   "staticFiles": {
-  "staticPath": "public"
+    "staticPath": "public"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "buffer": "^6.0.3",
+    "cpx": "^1.5.0",
     "parcel": "^2.15.4",
     "parcel-reporter-static-files-copy": "^1.5.3"
   }
